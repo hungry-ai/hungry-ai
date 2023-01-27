@@ -18,8 +18,9 @@ RowT = TypeVar("RowT", bound=DBSchema)
 
 
 class DB(Generic[RowT]):
-    def __init__(self, csv: str) -> None:
-        self.path = Path(__file__).parent.parent / "data" / csv
+    def __init__(self, path: Path) -> None:
+        self.path = path
+        print("Using", self.__class__.__name__, "at path:", self.path)
 
     @property
     def cls(self) -> type:  # TODO: get rid of this

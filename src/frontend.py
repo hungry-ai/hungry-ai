@@ -88,6 +88,9 @@ class Frontend:
 def main() -> None:
     frontend = Frontend()
 
+    instructions = "Commands:\n- sign_up <email> <password>\n- sign_in <email> <password>\n- sign_out\n- upload <url> <rating>\n- review <rating>"
+    print(instructions)
+
     while True:
         req = input().split()
 
