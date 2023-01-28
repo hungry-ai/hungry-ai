@@ -15,4 +15,4 @@ To test: `pytest tests`
 - topic service: gets a list of all topics
 - graph service: responsible for computing edge weights and predicting ratings
 
-![diagram of architecture](architecture.png)
+![diagram of architecture](architecture.jpg)
