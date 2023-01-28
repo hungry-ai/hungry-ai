@@ -1,4 +1,4 @@
-from db import Topic, TopicDB
+from src.db import Topic, TopicDB
 
 
 class TopicService:

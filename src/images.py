@@ -1,13 +1,13 @@
-from db import Image, ImageDB
-from topics import TopicService
-from graph import GraphService
-
 from uuid import uuid4
+
+from .db import Image, ImageDB
+from .graph import GraphService
+from .topics import TopicService
 
 
 def pr_match(url: str, topic: str) -> float:  # TODO
     # returns the probability that an image matches a certain topic
-    return 1.0
+    return 0.5
 
 
 class ImageService:
@@ -22,7 +22,7 @@ class ImageService:
         self.graph_service = graph_service
 
     def add_image(self, url: str) -> str:
-        image_id = uuid4()
+        image_id = str(uuid4())
         image = Image(image_id, url)
         self.image_db.insert(image)
 

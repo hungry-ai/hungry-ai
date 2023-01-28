@@ -1,10 +1,9 @@
 import datetime
 from dataclasses import dataclass, fields
-from uuid import uuid4
 from hashlib import sha256
 from pathlib import Path
-
 from typing import Any, Generic, TypeVar
+from uuid import uuid4
 
 import pandas as pd
 
@@ -19,16 +18,13 @@ RowT = TypeVar("RowT", bound=DBSchema)
 
 class DB(Generic[RowT]):
     def __init__(self, path: Path) -> None:
+        self.columns = [field.name for field in fields(self.cls)]
         self.path = path
         print("Using", self.__class__.__name__, "at path:", self.path)
 
     @property
     def cls(self) -> type:  # TODO: get rid of this
         raise NotImplementedError
-
-    @property
-    def columns(self) -> list[str]:
-        return [field.name for field in fields(self.cls)]
 
     @property
     def df(self) -> pd.DataFrame:
@@ -92,13 +88,9 @@ class ReviewDB(DB[Review]):
 
 
 @dataclass
-class Topic:
+class Topic(DBSchema):
     topic_id: str
-    words: list[str]
-
-    @property
-    def name(self) -> str:
-        return " ".join(self.words)
+    name: str
 
 
 class TopicDB(DB[Topic]):
@@ -116,3 +108,14 @@ class GraphDB(DB[Graph]):
     @property
     def cls(self) -> type:
         return Graph
+
+
+@dataclass
+class Recommendation(DBSchema):
+    pass
+
+
+class RecommendationDB(DB[Recommendation]):
+    @property
+    def cls(self) -> type:
+        return Recommendation
