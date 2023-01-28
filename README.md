@@ -1,6 +1,6 @@
 # hungry-ai
 
-To run: `python src/frontend.py`
+To run: `python -m src.frontend`
 
 To test: `pytest tests`
 
