@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "hungryai",
+  "private_key_id": "d6f8c9e2f0c9b129c1833e0064e314a6798914f7",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCJNkF6qGJBUf7Q\nhVr/x8aeBwlmGLb0oFUdfZlJZXFm5Rzr4Nqsl+akrUX58BvA1CvWzhxLVg+WfQCJ\n1FBPXosmst0nQjCtQMbJ3BNJOqyVr8qy5jhAWbMbNODnGtWF47A7SmPQzPxlGzSQ\nSnuE1FeUTOusMSUYIUzY+EnFOWwFSqH5Ou2yyzp16a0s7E6Q8egcB+ecehgOgVla\n8+3ntlRStKRWvBqp3qwId8T9X7Ii1vwwv/FmXE9F1wP2ShqT1iQdyVhYeo4xd3kj\nG7rK+LdTScT4U7iEebkZvYcktwTrhX6EDUYwf27ETeIP8VURylVFvlhnhF35SnOq\n3XHrzzJtAgMBAAECggEAA2IjGzMruRCch+fB5qy2aQ8jXDEf0chiUOfX78dglHjx\nzZ8txTO5rDXZk+AnzwlsS0+pwvHMUJmkecGSeWKLa9jdOyqWqK8AN9oFX7jiqI49\nIUwr9uo/UFxtb0VqHnMO1WdwLqXfU17oXOZ5RT03K6D57rUHhSDNFEyLBSH1V+wF\n80Piimlz/K49JmfP07ihJzc+nH5k4g3NP2yILX2z/aitAhyIvak2GHanOYyjGnuy\nQ70YiHCS/5jdIVoebEEpun0I1BCMCaw7gC+kAOTMkL1qAIFR8OGh5EZkUfXlGBIb\n2/RUYm+1c7TEzBG58bpOnpOSxDFXLeC4t9cOxxzyAQKBgQDA7TnTwd1ZhZcPERot\ntgjhq4H998VhLkNNZ222ZjsAW1mmW9ty+vqP0kF3uKdAS0EQMVpM2apqU9ypij3q\n7bpPGz3opsHI38wG+xbzFeehkNs+Q4NVLsCx5ghjSLNO5O492kwtECCoGOPMck7U\nbHErp8wiKRPo2ZdbkKlanp2VZQKBgQC2Egza2DejIqnF7Wk4X+hAwtYZNafSr6ic\n3bKi6HiO/3zJk/rRKD7DO8vlUMgu0Cv7S4m38yxHxQJ5wRPTZEX5LxjZ+b3S6HBU\nTs7jgPqs9hQclJrF1myMmlDtTv2GMIn07ij3GqcIB5PTlP9VAnT9Ht240MxwLafp\nH07sgJB8aQKBgCAm6N47jtIei2A9b2lyzuQdGxriMgjSFvFNbWFahDa5AqXQ5S+y\nWBOj7LkxEt6KLBuwveXU2KvDsiCnI06Fs+j/F0AwmlcJxQzcx6RXYDTy2Tb1NWv6\n0K5VMcyqDwf06ydvvAY+i9K34y7tVenc8LdfzYtb4S+LI8hkwXSSvpxpAoGATjcu\n4ozkSebIPEkjXJ6G7dtFkorkT7Q6oTj0Vtu7fuLuvsIdi+DYJZL4osizVrkDS+9F\neIq0yRgvWhLB65w2GzhKWsnY7FQCfZVld4KfLdKBDU4htz/IXhalEW1PqGgNu/Tc\nEFuYyfBHZyupDOIDVAIAijbYvJBAg/t5MkyAxZECgYA6W0gG+CchiyFKkPGnV8hv\nFReFIE/Fu7brJxxx8by1nGyMr9+TmUCjHXghR+OeEzKdearQrpdGOVKzovkmf19z\n7GzWcSR8/hvt64m0iACMPz/1UNUvhHlINOb9zsSSmStDNggC2uIp/cQFWMNGQms5\nFW9ZWEh6u5XpY03hSLl5Sg==\n-----END PRIVATE KEY-----\n",
+  "client_email": "hungryai@hungryai.iam.gserviceaccount.com",
+  "client_id": "106901403914527475821",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/hungryai%40hungryai.iam.gserviceaccount.com"
+}
