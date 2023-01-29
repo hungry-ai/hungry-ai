@@ -9,12 +9,11 @@ class RecommenderService:
     def __init__(
         self,
         recommendation_db: RecommendationDB,
-        graph_service: GraphService,
         review_service: ReviewService,
     ) -> None:
         self.recommendation_db = recommendation_db
-        self.graph_service = graph_service
         self.review_servies = review_service
+        self.graph_service = review_service.graph_service
 
         self.rated: set[str] = set()
 

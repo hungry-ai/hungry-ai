@@ -16,9 +16,18 @@ class DBSchema:
 RowT = TypeVar("RowT", bound=DBSchema)
 
 
+def to_pandas_dtype(py_type: type) -> str:
+    str_py_type = py_type.__name__
+    if str_py_type in ("str", "int", "float"):
+        return str_py_type
+    elif str_py_type == "datetime":
+        return "datetime64[ns]"
+    raise NotImplementedError
+
+
 class DB(Generic[RowT]):
     def __init__(self, path: Path) -> None:
-        self.columns = [field.name for field in fields(self.cls)]
+        self.columns = [(field.name, field.type) for field in fields(self.cls)]
         self.path = path
         print("Using", self.__class__.__name__, "at path:", self.path)
 
@@ -29,19 +38,24 @@ class DB(Generic[RowT]):
     @property
     def df(self) -> pd.DataFrame:
         if not self.path.exists():
-            return pd.DataFrame(columns=self.columns)
+            return pd.DataFrame(
+                {
+                    colname: pd.Series(dtype=to_pandas_dtype(coltype))
+                    for colname, coltype in self.columns
+                }
+            )
         return pd.read_csv(self.path)
 
     def select(self, **where: Any) -> list[RowT]:
         return [
-            self.cls(*[row[k] for k in self.columns])
+            self.cls(*[row[k] for k, _ in self.columns])
             for _, row in self.df.iterrows()
             if all([row[k] == v for k, v in where.items()])
         ]
 
     def insert(self, row: RowT) -> None:
         df = self.df.append(
-            {column: getattr(row, column) for column in self.columns},
+            {colname: getattr(row, colname) for colname, _ in self.columns},
             ignore_index=True,
         )
         df.to_csv(self.path, index=False)
@@ -100,14 +114,19 @@ class TopicDB(DB[Topic]):
 
 
 @dataclass
-class Graph(DBSchema):
-    pass
+class Edge(DBSchema):
+    from_id: str
+    from_type: int
+    to_id: str
+    to_type: int
+    weight: float
+    timestamp: datetime.datetime
 
 
-class GraphDB(DB[Graph]):
+class EdgeDB(DB[Edge]):
     @property
     def cls(self) -> type:
-        return Graph
+        return Edge
 
 
 @dataclass
