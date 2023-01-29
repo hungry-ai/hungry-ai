@@ -51,3 +51,19 @@ def test_predict_ratings(graph_service: GraphService) -> None:
     assert all(isinstance(rating, float) for rating in ratings.values())
     assert set(ratings.keys()) == {"i1", "i2", "i3"}
     assert all(1.0 <= rating <= 5.0 for rating in ratings.values())
+
+    graph_service.predict_ratings("u3")
+
+
+def test_read_graph(edge_db: EdgeDB) -> None:
+    graph_service = GraphService(edge_db)
+
+    ratings = graph_service.predict_ratings("u1")
+    assert len(ratings) == 0
+
+    graph_service.add_image_edge("i1", "t1", 0.5)
+
+    graph_service = GraphService(edge_db)
+
+    ratings = graph_service.predict_ratings("u1")
+    assert len(ratings) > 0

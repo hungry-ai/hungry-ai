@@ -33,14 +33,18 @@ class GraphService:
 
         self.in_neighbors: dict[Vertex, dict[Vertex, Edge]] = defaultdict(dict)
         self.out_neighbors: dict[Vertex, dict[Vertex, Edge]] = defaultdict(dict)
+        self._read_graph()
 
         self.rating_halflife = rating_halflife
 
     def _read_graph(self) -> None:
-        pass
+        edges = self.edge_db.select()
 
-    def _write_graph(self) -> None:
-        pass
+        for edge in edges:
+            from_vtx = Vertex(edge.from_id, edge.from_type)
+            to_vtx = Vertex(edge.to_id, edge.to_type)
+            self.out_neighbors[from_vtx][to_vtx] = edge
+            self.in_neighbors[to_vtx][from_vtx] = edge
 
     def _add_edge(
         self,
@@ -63,16 +67,15 @@ class GraphService:
 
         self.edge_db.insert(edge)
 
-    def add_image_edge(self, image_id: str, topic_id: str, p: float) -> None:  # TODO
+    def add_image_edge(self, image_id: str, topic_id: str, p: float) -> None:
         if p < 0.0 or p > 1.0:
             raise ValueError("invalid p")
 
         from_vtx = Vertex(image_id, VertexType.IMAGE.value)
         to_vtx = Vertex(topic_id, VertexType.TOPIC.value)
-        weight = 0.5
-        self._add_edge(from_vtx, to_vtx, weight)
+        self._add_edge(from_vtx, to_vtx, p)
 
-    def add_user_edge(self, user_id: str, image_id: str, rating: float) -> None:  # TODO
+    def add_user_edge(self, user_id: str, image_id: str, rating: float) -> None:
         if rating < 1.0 or rating > 5.0:
             raise ValueError("invalid rating")
 
