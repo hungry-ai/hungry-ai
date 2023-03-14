@@ -1,45 +1,47 @@
-from abc import ABC, abstractmethod
 
-#TODO(gnehzza): Add more comments to these functions.
-#TODO(gnehzza): Decide how we want to ID vertices.
-class GraphBase(ABC):
-
+class GraphBasic(GraphBase):
+    def __init__(self):
+        self.graph = []
+        self.graph_dict = []
+        self.num_edges = 0
+    
     # Returns number of vertices of the graph.
-    @abstractmethod
     def number_of_vertices(self):
-        pass
+        return len(self.graph)
 
     # Returns number of edges of the graph.
-    @abstractmethod
     def number_of_edges(self):
-        pass
+        return self.num_edges
     
     # Returns the i-th vertex of the graph.
     # This function is used to iterate through all vertices.
-    @abstractmethod
     def get_vertex(self, i):
-        pass
+        return i
 
     # Returns the vertex with the input id.
-    @abstractmethod
     def get_vertex_with_id(self, id):
-        pass
+        return id
 
     # Returns the i-th neighbor of the vertex v.
     # This function is used to iterate through all neighbors of a vertex.
-    @abstractmethod
     def get_neighbor(self, v, i):
-        pass
+        if i >= len(self.graph[v]): return None
+        return self.graph[v][i]
 
     # Returns the edge (v,u) where v and u are vertex IDs. Returns None if there is no edge.
-    @abstractmethod
     def get_edge(self, v, u):
-        pass
+        if u not in self.graph_dict[v]: return None
+        return self.graph_dict[v][u]
 
     # Adds a vertex to the graph.
     def add_vertex(self, v):
-        pass
+        self.graph.append([])
+        self.graph_dict.append(dict())
+        return len(self.graph) - 1
 
     # Adds an edge to the graph.
     def add_edge(self, edge):
-        pass
+        (v,u,w) = edge
+        if v >= len(self.graph): return None
+        self.graph[v].append()
+        self.graph_dict[v][u] = w
