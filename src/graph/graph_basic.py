@@ -1,7 +1,13 @@
+from graph_base import GraphBase
 
 class GraphBasic(GraphBase):
     def __init__(self):
+        # Adjacency list implementation of graph.
+        # self.graph[v][k] = (u,w) where u is the k-th outgoing neighbor v
+        # and w is the weight of the outgoing edge.
         self.graph = []
+        # Basically matrix representation of graph. 
+        # self.graph_dict[v][u] is the weight of the edge (v,u) if it exists.
         self.graph_dict = []
         self.num_edges = 0
     
@@ -34,7 +40,7 @@ class GraphBasic(GraphBase):
         return self.graph_dict[v][u]
 
     # Adds a vertex to the graph.
-    def add_vertex(self, v):
+    def add_vertex(self):
         self.graph.append([])
         self.graph_dict.append(dict())
         return len(self.graph) - 1
@@ -43,5 +49,6 @@ class GraphBasic(GraphBase):
     def add_edge(self, edge):
         (v,u,w) = edge
         if v >= len(self.graph): return None
-        self.graph[v].append()
+        self.graph[v].append((u,w))
         self.graph_dict[v][u] = w
+        return edge
