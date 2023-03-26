@@ -4,7 +4,8 @@ from abc import ABC, abstractmethod
 class WordEmbeddingBase(ABC):
 
     # Returns the dimension of the word embedding.
-    def dimension(self):
+    @abstractmethod
+    def get_dimension(self):
         pass
     
     # Returns number of words in the embedding.
