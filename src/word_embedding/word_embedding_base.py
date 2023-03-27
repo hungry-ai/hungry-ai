@@ -21,11 +21,16 @@ class WordEmbeddingBase(ABC):
     # Returns i-th vector of the embedding.
     # This is used to through all words of an embedding.
     @abstractmethod
-    def get_word_vector(self, i: int):
+    def get_ith_word_vector(self, i: int):
         pass
 
     # Adds a word and vector pair to the word embedding.
     # The argument v should be an object that satisfies needs. 
     @abstractmethod
     def add_word_vector(self, v):
+        pass
+
+    # Gets distance between two words.
+    @abstractmethod
+    def get_distance(self, word_1, word_2):
         pass

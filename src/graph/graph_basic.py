@@ -40,7 +40,8 @@ class GraphBasic(GraphBase):
         return self.graph_dict[v][u]
 
     # Adds a vertex to the graph.
-    def add_vertex(self):
+    def add_vertex(self, v):
+        word, vector = v
         self.graph.append([])
         self.graph_dict.append(dict())
         return len(self.graph) - 1
@@ -51,4 +52,5 @@ class GraphBasic(GraphBase):
         if v >= len(self.graph): return None
         self.graph[v].append((u,w))
         self.graph_dict[v][u] = w
+        self.num_edges += 1
         return edge

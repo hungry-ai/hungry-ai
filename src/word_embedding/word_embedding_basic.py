@@ -1,3 +1,5 @@
+import math
+
 from word_embedding_base import WordEmbeddingBase
 
 #TODO(gnehzza): Add more comments to these functions.
@@ -37,3 +39,10 @@ class WordEmbeddingBasic(WordEmbeddingBase):
         self.word_dict[word] = vec
         self.words.append(v)
         return 1
+    
+    # Gets distance between two words.
+    def get_distance(self, word_1, word_2):
+        result = 0.0
+        for i in range(self.dimension):
+            result += (self.words[word_1][1][i] - self.words[word_2][1][i])**2
+        return math.sqrt(result)
