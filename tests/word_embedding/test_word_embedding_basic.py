@@ -1,7 +1,9 @@
 import datetime
 
 import pytest
-from word_embedding_basic import WordEmbeddingBasic
+
+from src.word_embedding.word_embedding_basic import WordEmbeddingBasic
+
 
 def test_graph_basic():
     word_embedding_1 = WordEmbeddingBasic()
@@ -9,7 +11,7 @@ def test_graph_basic():
     assert 0 == word_embedding_1.number_of_words()
 
     word_embedding_1.add_word_vector(("A", [1, 0, 0, 0, 0]))
-    word_embedding_1.add_word_vector(("B", [0, 1, 0, 0, 0]))   
+    word_embedding_1.add_word_vector(("B", [0, 1, 0, 0, 0]))
     word_embedding_1.add_word_vector(("C", [0, 0, 1, 0, 0]))
     word_embedding_1.add_word_vector(("Hello", [0, 0, 0, 1, 0]))
     word_embedding_1.add_word_vector(("Bonjour", [0, 0, 0, 0, 1]))
@@ -27,5 +29,3 @@ def test_graph_basic():
     word_vector = word_embedding_1.get_ith_word_vector(6)
     assert "Konichiwa" == word_vector[0]
     assert [1, 0, 1, 0, 0] == word_vector[1]
-
-

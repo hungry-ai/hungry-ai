@@ -1,26 +1,24 @@
 import datetime
 import pytest
 
-import sys
+from src.topics_graph.construct_graph_from_embedding import (
+    construct_graph_from_embedding,
+)
+from src.topics_graph.graph_basic import GraphBasic
+from src.word_embedding.word_embedding_basic import WordEmbeddingBasic
 
-sys.path.append('../word_embedding')
-
-import construct_graph_from_embedding
-
-from graph_basic import GraphBasic
-from word_embedding_basic import WordEmbeddingBasic
 
 def test_construct_graph_from_embedding():
     word_embedding_1 = WordEmbeddingBasic()
-    word_embedding_1.add_word_vector(("A", [1., 0., 0., 0., 0.]))
-    word_embedding_1.add_word_vector(("B", [0., 1., 0., 0., 0.]))   
-    word_embedding_1.add_word_vector(("C", [0., 0., 2., 0., 0.]))
-    word_embedding_1.add_word_vector(("Hello", [0., 0., 0., 1.3, 0.]))
-    word_embedding_1.add_word_vector(("Bonjour", [0., 0., 0., 0., 1.]))
-    word_embedding_1.add_word_vector(("Nihao", [1.2, 0., 0., 0., 0.]))
-    word_embedding_1.add_word_vector(("Konichiwa", [1.3, 0., 0., 0., 0.]))
+    word_embedding_1.add_word_vector(("A", [1.0, 0.0, 0.0, 0.0, 0.0]))
+    word_embedding_1.add_word_vector(("B", [0.0, 1.0, 0.0, 0.0, 0.0]))
+    word_embedding_1.add_word_vector(("C", [0.0, 0.0, 2.0, 0.0, 0.0]))
+    word_embedding_1.add_word_vector(("Hello", [0.0, 0.0, 0.0, 1.3, 0.0]))
+    word_embedding_1.add_word_vector(("Bonjour", [0.0, 0.0, 0.0, 0.0, 1.0]))
+    word_embedding_1.add_word_vector(("Nihao", [1.2, 0.0, 0.0, 0.0, 0.0]))
+    word_embedding_1.add_word_vector(("Konichiwa", [1.3, 0.0, 0.0, 0.0, 0.0]))
     graph_1 = GraphBasic()
-    construct_graph_from_embedding.construct_graph_from_embedding(word_embedding_1, graph_1)
+    construct_graph_from_embedding(word_embedding_1, graph_1)
     assert 7 == graph_1.number_of_vertices()
     assert 7 == graph_1.number_of_edges()
 
@@ -51,6 +49,3 @@ def test_construct_graph_from_embedding():
     assert None == edge_4
     assert None == edge_5
     assert None == edge_6
-
-
-
