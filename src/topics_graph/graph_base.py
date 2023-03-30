@@ -20,9 +20,9 @@ class GraphBase(ABC):
     def get_vertex(self, i):
         pass
 
-    # Returns the vertex with the input id.
+    # Returns the vertex with the input name.
     @abstractmethod
-    def get_vertex_with_id(self, id):
+    def get_vertex_with_name(self, name):
         pass
 
     # Returns the i-th neighbor of the vertex v.

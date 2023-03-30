@@ -25,9 +25,9 @@ class GraphBasic(GraphBase):
     def get_vertex(self, i):
         return i
 
-    # Returns the vertex with the input id.
-    def get_vertex_with_id(self, id):
-        return id
+    # Returns the vertex with the input name.
+    def get_vertex_with_name(self, name):
+        return name
 
     # Returns the i-th neighbor of the vertex v.
     # This function is used to iterate through all neighbors of a vertex.
