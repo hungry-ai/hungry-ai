@@ -54,6 +54,7 @@ construction.construct_graph_from_embedding(word_embedding_basic_1, graph_txt_1)
 print(graph_txt_1.number_vertices)
 
 graph_txt_1.graph_to_file()
+graph_txt_2 = graph_txt.GraphTXT("sample.txt")
 
 net = Network(notebook=True)
 

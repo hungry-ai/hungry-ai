@@ -41,16 +41,18 @@ class GraphTXT(GraphBase):
     def load_graph(self):
         with open(self.file_name, 'r') as file:
             line_list = file.readline().split(' ')
-            if len(line_list != 2):
+            if len(line_list)!= 2:
                 print("CSV formatted incorrectly! First line must contain 2 items!")
                 return
             vertex_count, edge_count = line_list
+            vertex_count = int(vertex_count)
+            edge_count = int(edge_count)
             for i in range(vertex_count):
-                if self.add_vertex(file.readline()) == None: 
+                if self.add_vertex_from_string(file.readline()) == None: 
                     print("Load graph failed! Failed at line number: " + str(1 + i))
                     return
             for i in range(edge_count):
-                if self.add_edge(file.readline()) == None:
+                if self.add_edge_from_string(file.readline()) == None:
                     print("Load graph failed! Failed at line number: " + str(1 + vertex_count + i))
                     return
                         
@@ -127,7 +129,7 @@ class GraphTXT(GraphBase):
 
     # Adds an edge to the graph.
     def add_edge_from_string(self, edge_string):
-        edge_items = edge_string.split(',')
+        edge_items = edge_string.split(' ')
         if len(edge_items) != 3:
             print("CSV file format incorrect! Current line is not correct format for edge!")
             return None
@@ -139,11 +141,11 @@ class GraphTXT(GraphBase):
         if filename == None:
             filename = "sample.txt"
         with open(filename, "w") as file:
-            file.write(str(self.number_of_vertices()) + " " + str(self.number_of_edges()))
+            file.write(str(self.number_of_vertices()) + " " + str(self.number_of_edges()) + "\n")
             for i in range(self.number_of_vertices()):
                 vertex = self.get_vertex(i)
-                file.write(str(vertex.type) + " " + vertex.word + " " + str(vertex.word_vector))
+                file.write(str(vertex.type) + " " + vertex.word + " " + str(vertex.word_vector) + "\n")
             for i in range(self.number_of_edges()):
                 edge = self.edge_list[i]
-                file.write(edge.vertex_out + " " + edge.vertex_in + " " + str(edge.edge_weight))
+                file.write(edge.vertex_out + " " + edge.vertex_in + " " + str(edge.edge_weight) + "\n")
         return filename
