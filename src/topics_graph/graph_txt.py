@@ -1,7 +1,6 @@
 from .graph_base import GraphBase
 from enum import Enum
 
-
 class VertexType(Enum):
     USER = 0
     IMAGE = 1
@@ -11,8 +10,15 @@ class VertexTXT():
     def __init__(self, vertex_type, word, word_vector, id = None):
         self.type = vertex_type
         # If the graph type isn't a topic, the word is just image_743
-        # or topic_8294. Whatever the id is.
-        self.word = word
+        # or user_8294. Whatever the id is. 
+        if self.type == VertexType.USER:
+            self.word = "user_" + str(id)
+        elif self.type == VertexType.IMAGE:
+            self.word = "image_" + str(id)
+        elif self.type == VertexType.TOPIC:
+            self.word = word
+        else:
+            raise TypeError("Input vertex_type = " + str(self.type) + " is not one of USER, IMAGE, TOPIC.")
         self.word_vector = word_vector
         self.id = id
 
@@ -28,9 +34,17 @@ class GraphTXT(GraphBase):
         self.file_name = file_name
         # List of vertices of graph. self.vertex_list[k] is the vertex with id k.
         self.vertex_list = []
+        # List of edges of graph. self.edge_list[k] is the edge with id k.
         self.edge_list = []
+        # Keys are words. self.vertex_dict[word] is a VertexTXT object, v, 
+        # such that v.word = word.
         self.vertex_dict = dict()
+        # Keys are words. self.neighbors_lists[word] is a list of vertex_id's such 
+        # that there is an edge from word to each vertex_id.
         self.neighbors_lists = dict()
+        # Keys are words. self.neighbors_dicts[word] is a dictionary where keys are 
+        # words. self.neighbors_dicts[word_1][word_2] exists iff there is a edge from
+        # word_1 to word_2 and the value is the edge_id of said edge.
         self.neighbors_dicts = dict()
         self.number_edges = 0
         self.number_vertices = 0
@@ -42,20 +56,16 @@ class GraphTXT(GraphBase):
         with open(self.file_name, 'r') as file:
             line_list = file.readline().split(' ')
             if len(line_list)!= 2:
-                print("CSV formatted incorrectly! First line must contain 2 items!")
-                return
+                raise ValueError("CSV formatted incorrectly! First line must contain 2 items!")
             vertex_count, edge_count = line_list
             vertex_count = int(vertex_count)
             edge_count = int(edge_count)
             for i in range(vertex_count):
-                if self.add_vertex_from_string(file.readline()) == None: 
-                    print("Load graph failed! Failed at line number: " + str(1 + i))
-                    return
+                if self.add_vertex_from_string(file.readline()) == None:
+                    raise ValueError("Failed attempting to load vertex. Line number in file: " + str(1 + i))
             for i in range(edge_count):
                 if self.add_edge_from_string(file.readline()) == None:
-                    print("Load graph failed! Failed at line number: " + str(1 + vertex_count + i))
-                    return
-                        
+                    raise ValueError("Failed attempting to load edge. Line number in file: " + str(1 + vertex_count + i))
 
     # Returns number of vertices of the graph.
     def number_of_vertices(self):
@@ -75,7 +85,8 @@ class GraphTXT(GraphBase):
     # Returns the vertex with the input name.
     def get_vertex_with_name(self, name):
         if name in self.vertex_dict:
-            return self.vertex_dict[name]
+            vertex_id = self.vertex_dict[name]
+            return self.vertex_list[vertex_id]
         return None
 
     def get_edge(self, i):
@@ -86,21 +97,29 @@ class GraphTXT(GraphBase):
     # Returns the edge (v,u) where v and u are vertex IDs. Returns None if there is no edge.
     def get_edge_with_name(self, v, u):
         if v in self.neighbors_dicts and u in self.neighbors_dicts[v]:
-            return self.neighbors_dicts[v][u]
+            edge_id = self.neighbors_dicts[v][u]
+            return self.edge_list[edge_id]
         return None
     
     # Returns the i-th neighbor of the vertex v.
     # This function is used to iterate through all neighbors of a vertex.
     def get_neighbor(self, v, i):
         if v in self.neighbors_lists and 0 <= i and i < len(self.neighbors_lists[v]):
-            return self.neighbors_lists[v][i]
+            neighbor_word = self.neighbors_lists[v][i]
+            return self.vertex_dict[neighbor_word]
         return None
     
     def add_vertex(self, vertex):
-        vertex_type, word, word_vector = vertex
-        vertex_csv = VertexTXT(vertex_type, word, word_vector, self.number_vertices)
-        self.vertex_list.append(vertex_csv)
-        self.vertex_dict[word] = vertex_csv
+        if len(vertex) == 2:
+            word, word_vector = vertex
+            vertex_type = VertexType.TOPIC
+        else:
+            vertex_type, word, word_vector = vertex
+            vertex_type = VertexType(int(vertex_type))
+        vertex_id = self.number_vertices
+        vertex_txt = VertexTXT(vertex_type, word, word_vector, vertex_id)
+        self.vertex_list.append(vertex_txt)
+        self.vertex_dict[word] = vertex_id
         self.neighbors_lists[word] = []
         self.neighbors_dicts[word] = dict()
         self.number_vertices += 1
@@ -108,11 +127,12 @@ class GraphTXT(GraphBase):
 
     def add_edge(self, edge):
         vertex_in, vertex_out, edge_weight = edge
-        edge_csv = EdgeTXT(vertex_in, vertex_out, edge_weight, self.number_edges)
-        self.neighbors_lists[vertex_in].append(edge_csv)
-        self.neighbors_dicts[vertex_in][vertex_out] = edge_csv
+        edge_id = self.number_edges
+        edge_txt = EdgeTXT(vertex_in, vertex_out, edge_weight, edge_id)
+        self.edge_list.append(edge_txt)
+        self.neighbors_lists[vertex_in].append(vertex_out)
+        self.neighbors_dicts[vertex_in][vertex_out] = edge_id
         self.number_edges += 1
-        self.edge_list.append(edge_csv)
         return self.number_edges
 
     # Adds a vertex to the graph.
@@ -144,7 +164,7 @@ class GraphTXT(GraphBase):
             file.write(str(self.number_of_vertices()) + " " + str(self.number_of_edges()) + "\n")
             for i in range(self.number_of_vertices()):
                 vertex = self.get_vertex(i)
-                file.write(str(vertex.type) + " " + vertex.word + " " + str(vertex.word_vector) + "\n")
+                file.write(str(vertex.type.value) + " " + vertex.word + " " + str(vertex.word_vector) + "\n")
             for i in range(self.number_of_edges()):
                 edge = self.edge_list[i]
                 file.write(edge.vertex_out + " " + edge.vertex_in + " " + str(edge.edge_weight) + "\n")

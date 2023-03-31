@@ -14,12 +14,10 @@ class VertexType(Enum):
     IMAGE = 1
     TOPIC = 2
 
-
 @dataclass(frozen=True)
 class Vertex:
     id: str
     type: int
-
 
 class GraphService:
     def __init__(

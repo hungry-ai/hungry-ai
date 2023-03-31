@@ -5,7 +5,7 @@ from word_embedding.word_embedding_base import WordEmbeddingBase
 def construct_graph_from_embedding(word_embedding: WordEmbeddingBase, graph: GraphBase):
     for i in range(word_embedding.number_of_words()):
         word, word_vector = word_embedding.get_ith_word_vector(i)
-        graph.add_vertex((2, word, word_vector))
+        graph.add_vertex((word, word_vector))
 
     for i in range(word_embedding.number_of_words()):
         min_distance = None
