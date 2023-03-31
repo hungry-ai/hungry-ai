@@ -1,7 +1,7 @@
 import torch
 import torchtext
 from word_embedding.word_embedding_basic import WordEmbeddingBasic
-import generate_topics_graph
+import topics_utils
 import topics_graph.graph_txt as graph_txt
 from pyvis.network import Network
 
@@ -50,7 +50,7 @@ for word in words:
 
 print("Number of words kept: " + str(words_kept))
 graph_txt_1 = graph_txt.GraphTXT()
-generate_topics_graph.generate_topics_graph(word_embedding_basic_1, graph_txt_1)
+topics_utils.generate_topics_graph(word_embedding_basic_1, graph_txt_1)
 print(graph_txt_1.number_vertices)
 
 graph_txt_1.graph_to_file()
