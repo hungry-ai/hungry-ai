@@ -1,8 +1,7 @@
 from topics_graph.graph_base import GraphBase
 from word_embedding.word_embedding_base import WordEmbeddingBase
 
-
-def construct_graph_from_embedding(word_embedding: WordEmbeddingBase, graph: GraphBase):
+def generate_topics_graph(word_embedding: WordEmbeddingBase, graph: GraphBase):
     for i in range(word_embedding.number_of_words()):
         word, word_vector = word_embedding.get_ith_word_vector(i)
         graph.add_vertex((word, word_vector))
@@ -22,4 +21,4 @@ def construct_graph_from_embedding(word_embedding: WordEmbeddingBase, graph: Gra
         closest_word = word_embedding.get_ith_word_vector(closest_neighbor)[0]
         if current_word == closest_word: 
             print("There's a self-loop! " + str(closest_neighbor) + " " + str(i) + " " + current_word)
-        graph.add_edge((current_word, closest_word, 1.0))
+        graph.add_edge((current_word, closest_word, min_distance))
