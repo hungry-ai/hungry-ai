@@ -2,7 +2,7 @@ import torch
 import torchtext
 from word_embedding.word_embedding_basic import WordEmbeddingBasic
 import construct_graph_from_embedding as construction
-import topics_graph.graph_csv as graph_csv
+import topics_graph.graph_txt as graph_txt
 from pyvis.network import Network
 
 words = ["Food", "Cuisine", "Taste", "Delicious", "Meal", "Recipe", "Cooking", "Beverage", "Gourmet", "Flavor", 
@@ -49,23 +49,23 @@ for word in words:
         words_kept += 1
 
 print("Number of words kept: " + str(words_kept))
-graph_csv_1 = graph_csv.GraphCSV()
-construction.construct_graph_from_embedding(word_embedding_basic_1, graph_csv_1)
-print(graph_csv_1.number_vertices)
+graph_txt_1 = graph_txt.GraphTXT()
+construction.construct_graph_from_embedding(word_embedding_basic_1, graph_txt_1)
+print(graph_txt_1.number_vertices)
 
-graph_csv_1.graph_to_file()
+graph_txt_1.graph_to_file()
 
 net = Network(notebook=True)
 
-for i in range(graph_csv_1.number_of_vertices()):
-    vertex = graph_csv_1.get_vertex(i)
+for i in range(graph_txt_1.number_of_vertices()):
+    vertex = graph_txt_1.get_vertex(i)
     net.add_node(vertex.word, label=vertex.word, label_position="center", shape="circle", value = 3)
 
 for node in net.nodes:
     node["label_layout"] = 'center'
 
-for i in range(graph_csv_1.number_of_edges()):
-    edge = graph_csv_1.get_ith_edge(i)
+for i in range(graph_txt_1.number_of_edges()):
+    edge = graph_txt_1.get_edge(i)
     net.add_edge(edge.vertex_out, edge.vertex_in, arrows = "to")
 
 net.show("example.html")

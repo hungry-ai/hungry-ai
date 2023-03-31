@@ -1,5 +1,3 @@
-import csv
-
 from .graph_base import GraphBase
 from enum import Enum
 
@@ -9,7 +7,7 @@ class VertexType(Enum):
     IMAGE = 1
     TOPIC = 2
 
-class VertexCSV():
+class VertexTXT():
     def __init__(self, vertex_type, word, word_vector, id = None):
         self.type = vertex_type
         # If the graph type isn't a topic, the word is just image_743
@@ -18,14 +16,14 @@ class VertexCSV():
         self.word_vector = word_vector
         self.id = id
 
-class EdgeCSV():
+class EdgeTXT():
     def __init__(self, vertex_out, vertex_in, edge_weight, id = None):
         self.vertex_out = vertex_out
         self.vertex_in = vertex_in
         self.edge_weight = edge_weight
         self.id = id
 
-class GraphCSV(GraphBase):
+class GraphTXT(GraphBase):
     def __init__(self, file_name = None):
         self.file_name = file_name
         # List of vertices of graph. self.vertex_list[k] is the vertex with id k.
@@ -78,27 +76,27 @@ class GraphCSV(GraphBase):
             return self.vertex_dict[name]
         return None
 
+    def get_edge(self, i):
+        if 0 <= i and i < self.number_edges:
+            return self.edge_list[i]
+        return None
+
+    # Returns the edge (v,u) where v and u are vertex IDs. Returns None if there is no edge.
+    def get_edge_with_name(self, v, u):
+        if v in self.neighbors_dicts and u in self.neighbors_dicts[v]:
+            return self.neighbors_dicts[v][u]
+        return None
+    
     # Returns the i-th neighbor of the vertex v.
     # This function is used to iterate through all neighbors of a vertex.
     def get_neighbor(self, v, i):
         if v in self.neighbors_lists and 0 <= i and i < len(self.neighbors_lists[v]):
             return self.neighbors_lists[v][i]
         return None
-
-    def get_ith_edge(self, i):
-        if 0 <= i and i < self.number_edges:
-            return self.edge_list[i]
-        return None
-
-    # Returns the edge (v,u) where v and u are vertex IDs. Returns None if there is no edge.
-    def get_edge(self, v, u):
-        if v in self.neighbors_dicts and u in self.neighbors_dicts[v]:
-            return self.neighbors_dicts[v][u]
-        return None
     
     def add_vertex(self, vertex):
         vertex_type, word, word_vector = vertex
-        vertex_csv = VertexCSV(vertex_type, word, word_vector, self.number_vertices)
+        vertex_csv = VertexTXT(vertex_type, word, word_vector, self.number_vertices)
         self.vertex_list.append(vertex_csv)
         self.vertex_dict[word] = vertex_csv
         self.neighbors_lists[word] = []
@@ -108,7 +106,7 @@ class GraphCSV(GraphBase):
 
     def add_edge(self, edge):
         vertex_in, vertex_out, edge_weight = edge
-        edge_csv = EdgeCSV(vertex_in, vertex_out, edge_weight, self.number_edges)
+        edge_csv = EdgeTXT(vertex_in, vertex_out, edge_weight, self.number_edges)
         self.neighbors_lists[vertex_in].append(edge_csv)
         self.neighbors_dicts[vertex_in][vertex_out] = edge_csv
         self.number_edges += 1
@@ -149,7 +147,3 @@ class GraphCSV(GraphBase):
                 edge = self.edge_list[i]
                 file.write(edge.vertex_out + " " + edge.vertex_in + " " + str(edge.edge_weight))
         return filename
-
-
-
-
