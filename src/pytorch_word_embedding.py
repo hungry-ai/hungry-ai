@@ -4,6 +4,7 @@ from word_embedding.word_embedding_basic import WordEmbeddingBasic
 import topics_utils
 import topics_graph.graph_txt as graph_txt
 from pyvis.network import Network
+import networkx as nx
 
 words = ["Food", "Cuisine", "Taste", "Delicious", "Meal", "Recipe", "Cooking", "Beverage", "Gourmet", "Flavor", 
          "Dish", "Cuisines", "Ingredient", "Tasting", "Nourishment", "Gastronomy", "Feast", "Spice", "Savor", 
@@ -56,17 +57,29 @@ print(graph_txt_1.number_vertices)
 graph_txt_1.graph_to_file()
 graph_txt_2 = graph_txt.GraphTXT("sample.txt")
 
-net = Network(notebook=True)
+net = nx.DiGraph()
 
 for i in range(graph_txt_1.number_of_vertices()):
     vertex = graph_txt_1.get_vertex(i)
-    net.add_node(vertex.word, label=vertex.word, label_position="center", shape="circle", value = 3)
-
-for node in net.nodes:
-    node["label_layout"] = 'center'
-
+    net.add_node(vertex.word)
 for i in range(graph_txt_1.number_of_edges()):
     edge = graph_txt_1.get_edge(i)
     net.add_edge(edge.vertex_out, edge.vertex_in, arrows = "to")
 
-net.show("example.html")
+scale = 10 # size ~= 10 * in-degree
+d = dict(net.in_degree)
+d.update((x,5+scale*y) for x,y in d.items()) # nodes with in-degree 0 have size 5
+nx.set_node_attributes(net, d, 'size')
+
+G = Network(notebook=True)
+G.from_nx(net)
+
+
+
+
+G.show("vis_scaled.html") # Node size scales with in-degree, label is outside circle
+
+for n in G.nodes:
+    n['shape'] = 'circle' # This forces pyvis to put label inside circle
+
+G.show("vis_unscaled.html") # Label is inside circle, size overrided to fit label
