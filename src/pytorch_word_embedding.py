@@ -1,10 +1,10 @@
-import torch
 import torchtext
+from pyvis.network import Network
+import networkx as nx
 from word_embedding.word_embedding_basic import WordEmbeddingBasic
 import topics_utils
 import topics_graph.graph_txt as graph_txt
-from pyvis.network import Network
-import networkx as nx
+
 
 words = ["Food", "Cuisine", "Taste", "Delicious", "Meal", "Recipe", "Cooking", "Beverage", "Gourmet", "Flavor", 
          "Dish", "Cuisines", "Ingredient", "Tasting", "Nourishment", "Gastronomy", "Feast", "Spice", "Savor", 
@@ -30,9 +30,6 @@ words = ["Food", "Cuisine", "Taste", "Delicious", "Meal", "Recipe", "Cooking", "
          "kiwi", "pineapple", "coconut", "almonds", "pecans", "walnuts", "cashews", "peanuts", "macadamia nuts", "pistachios", 
          "hazelnuts", "beef", "pork", "chicken", "turkey", "duck", "lamb", "veal", "bacon", "sausage", "ham", "salmon", "tuna", 
          "cod", "halibut", "shrimp", "crab", "lobster", "oysters", "clams", "mussels", "scallops"]
-
-for i in range(len(words)):
-    words[i] = words[i].lower()
 
 words = list(set(words))
 
@@ -66,20 +63,18 @@ for i in range(graph_txt_1.number_of_edges()):
     edge = graph_txt_1.get_edge(i)
     net.add_edge(edge.vertex_out, edge.vertex_in, arrows = "to")
 
-scale = 10 # size ~= 10 * in-degree
+MIN_SIZE = 5 # size of node with in-degree 0
+SCALE = 10 # size increase when in-degree increases by 1
 d = dict(net.in_degree)
-d.update((x,5+scale*y) for x,y in d.items()) # nodes with in-degree 0 have size 5
+d.update((word, MIN_SIZE + SCALE*in_degree) for word,in_degree in d.items())
 nx.set_node_attributes(net, d, 'size')
 
-G = Network(notebook=True)
-G.from_nx(net)
+visual_net = Network(notebook=True)
+visual_net.from_nx(net)
 
+visual_net.show("visualize_scaled.html") # Node size scales with in-degree, label is outside circle
 
-
-
-G.show("vis_scaled.html") # Node size scales with in-degree, label is outside circle
-
-for n in G.nodes:
+for n in visual_net.nodes:
     n['shape'] = 'circle' # This forces pyvis to put label inside circle
 
-G.show("vis_unscaled.html") # Label is inside circle, size overrided to fit label
+visual_net.show("visualize_unscaled.html") # Label is inside circle, size overrided to fit label
