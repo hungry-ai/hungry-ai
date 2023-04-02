@@ -1,9 +1,10 @@
-import torch
 import torchtext
+from pyvis.network import Network
+import networkx as nx
 from word_embedding.word_embedding_basic import WordEmbeddingBasic
 import topics_utils
 import topics_graph.graph_txt as graph_txt
-from pyvis.network import Network
+
 
 words = ["Food", "Cuisine", "Taste", "Delicious", "Meal", "Recipe", "Cooking", "Beverage", "Gourmet", "Flavor", 
          "Dish", "Cuisines", "Ingredient", "Tasting", "Nourishment", "Gastronomy", "Feast", "Spice", "Savor", 
@@ -30,9 +31,6 @@ words = ["Food", "Cuisine", "Taste", "Delicious", "Meal", "Recipe", "Cooking", "
          "hazelnuts", "beef", "pork", "chicken", "turkey", "duck", "lamb", "veal", "bacon", "sausage", "ham", "salmon", "tuna", 
          "cod", "halibut", "shrimp", "crab", "lobster", "oysters", "clams", "mussels", "scallops"]
 
-for i in range(len(words)):
-    words[i] = words[i].lower()
-
 words = list(set(words))
 
 # Load the pre-trained word embeddings
@@ -56,17 +54,27 @@ print(graph_txt_1.number_vertices)
 graph_txt_1.graph_to_file()
 graph_txt_2 = graph_txt.GraphTXT("sample.txt")
 
-net = Network(notebook=True)
+net = nx.DiGraph()
 
 for i in range(graph_txt_1.number_of_vertices()):
     vertex = graph_txt_1.get_vertex(i)
-    net.add_node(vertex.word, label=vertex.word, label_position="center", shape="circle", value = 3)
-
-for node in net.nodes:
-    node["label_layout"] = 'center'
-
+    net.add_node(vertex.word)
 for i in range(graph_txt_1.number_of_edges()):
     edge = graph_txt_1.get_edge(i)
     net.add_edge(edge.vertex_out, edge.vertex_in, arrows = "to")
 
-net.show("example.html")
+MIN_SIZE = 5 # size of node with in-degree 0
+SCALE = 10 # size increase when in-degree increases by 1
+d = dict(net.in_degree)
+d.update((word, MIN_SIZE + SCALE*in_degree) for word,in_degree in d.items())
+nx.set_node_attributes(net, d, 'size')
+
+visual_net = Network(notebook=True)
+visual_net.from_nx(net)
+
+visual_net.show("visualize_scaled.html") # Node size scales with in-degree, label is outside circle
+
+for n in visual_net.nodes:
+    n['shape'] = 'circle' # This forces pyvis to put label inside circle
+
+visual_net.show("visualize_unscaled.html") # Label is inside circle, size overrided to fit label
