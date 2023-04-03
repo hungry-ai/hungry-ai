@@ -51,7 +51,6 @@ def build_graph(graph, weighted): # graph object => nx.Digraph object
             net.add_edge(edge.vertex_out, edge.vertex_in, title=edge.edge_weight, arrows="to")
         else:
             net.add_edge(edge.vertex_out, edge.vertex_in, arrows="to")
-    return net
 
 def build_word_embedding(word_embedding): # word_embedding object => graph object
     graph_txt_1 = graph_txt.GraphTXT()

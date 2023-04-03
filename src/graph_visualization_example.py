@@ -77,4 +77,3 @@ def vertex_types_example():
 
 graph_visualization(vertex_types_example(), 'types_graph')
 #graph_visualization_example()
-
