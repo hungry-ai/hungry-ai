@@ -4,7 +4,7 @@ import topics_utils
 import topics_graph.graph_txt as graph_txt
 from graph_visualization import graph_visualization
 
-def test_graph_visualization():
+def graph_visualization_example():
     '''
     This function runs graph_visualization on 4 different inputs. 
     It takes a hot minute to run...
@@ -62,4 +62,6 @@ def test_graph_visualization():
     graph_txt_1.graph_to_file()
 
     graph_visualization('sample.txt', 'from_file')
-test_graph_visualization()
+
+graph_visualization_example()
+

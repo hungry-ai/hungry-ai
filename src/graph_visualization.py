@@ -10,7 +10,7 @@ from topics_graph.graph_base import GraphBase
 def graph_visualization(obj, file_name='graph_visualization', scaled=True):
     '''
     Converts various objects into pyvis network object and outputs visualization as html.
-    x : file name, OR word list, OR word embedding object, OR graph object
+    obj : file name, OR word list, OR word embedding object, OR graph object
     '''
     net = nx.DiGraph()
     visual_net = Network(notebook=True)
@@ -68,3 +68,4 @@ def build_words(words): # string list => word_embedding object
 
 def build_file(file_name):
     return graph_txt.GraphTXT(file_name)
+
