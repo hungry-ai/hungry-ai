@@ -1,3 +1,4 @@
+# TODO: discuss style convention for imports 
 from pyvis.network import Network
 import networkx as nx
 import torchtext
@@ -7,7 +8,7 @@ import topics_utils
 import topics_graph.graph_txt as graph_txt
 from topics_graph.graph_base import GraphBase
 
-def graph_visualization(obj, file_name='graph_visualization', scaled=True):
+def graph_visualization(obj, file_name='graph_visualization', weighted=True, scaled=True):
     '''
     Converts various objects into pyvis network object and outputs visualization as html.
     obj : file name, OR word list, OR word embedding object, OR graph object
@@ -15,13 +16,13 @@ def graph_visualization(obj, file_name='graph_visualization', scaled=True):
     net = nx.DiGraph()
     visual_net = Network(notebook=True)
     if isinstance(obj,str):
-        net = build_graph(build_file(obj))
+        net = build_graph(build_file(obj), weighted)
     elif isinstance(obj,list):
-        net = build_graph(build_word_embedding(build_words(obj)))
+        net = build_graph(build_word_embedding(build_words(obj)), weighted)
     elif isinstance(obj,WordEmbeddingBase):
-        net = build_graph(build_word_embedding(obj))
+        net = build_graph(build_word_embedding(obj), weighted)
     elif isinstance(obj,GraphBase):
-        net = build_graph(obj)
+        net = build_graph(obj, weighted)
     else:
         raise TypeError('Please provide a file name, words list, word embedding, or graph.')
     if scaled:
@@ -34,15 +35,22 @@ def graph_visualization(obj, file_name='graph_visualization', scaled=True):
         nx.set_node_attributes(net, 'circle', 'shape')
     visual_net.from_nx(net)
     visual_net.show(file_name + '.html')
+    print('Graph outputted to file: ' + file_name + '.html')
 
-def build_graph(graph): # graph object => nx.Digraph object
+def build_graph(graph, weighted): # graph object => nx.Digraph object
     net = nx.DiGraph()
     for i in range(graph.number_of_vertices()):
-        net.add_node(graph.get_vertex(i).word)
+        vertex = graph.get_vertex(i)
+        if isinstance(graph,graph_txt.GraphTXT):
+            net.add_node(vertex.word, group=vertex.type.value)
+        else:
+            net.add_node(vertex.word)
     for i in range(graph.number_of_edges()):
         edge = graph.get_edge(i)
-        net.add_edge(edge.vertex_out, edge.vertex_in, arrows="to")
-    return net
+        if weighted:
+            net.add_edge(edge.vertex_out, edge.vertex_in, title=edge.edge_weight, arrows="to")
+        else:
+            net.add_edge(edge.vertex_out, edge.vertex_in, arrows="to")
 
 def build_word_embedding(word_embedding): # word_embedding object => graph object
     graph_txt_1 = graph_txt.GraphTXT()
