@@ -63,5 +63,18 @@ def graph_visualization_example():
 
     graph_visualization('sample.txt', 'from_file')
 
-graph_visualization_example()
+def vertex_types_example():
+    graph = graph_txt.GraphTXT()
+    vertex1 = [0, 'Zozo', [1.0,0,0]]
+    vertex2 = [2, 'Japanese food', [0,2.0,0]]
+    vertex3 = [1, 'Ramen Image', [0,0,3.0]]
+    graph.add_vertex(vertex1)
+    graph.add_vertex(vertex2)
+    graph.add_vertex(vertex3)
+    graph.add_edge(['user_0','Japanese food',3.0])
+    graph.add_edge(['Japanese food','image_2',2.0])
+    return graph
+
+graph_visualization(vertex_types_example(), 'types_graph')
+#graph_visualization_example()
 

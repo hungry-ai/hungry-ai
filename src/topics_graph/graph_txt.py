@@ -1,5 +1,5 @@
-from .graph_base import GraphBase
 from enum import Enum
+from .graph_base import GraphBase
 
 class VertexType(Enum):
     USER = 0
@@ -110,6 +110,9 @@ class GraphTXT(GraphBase):
         return None
     
     def add_vertex(self, vertex):
+        '''
+        vertex: list containing (optional: vertex_type), word, word_vector
+        '''
         if len(vertex) == 2:
             word, word_vector = vertex
             vertex_type = VertexType.TOPIC
@@ -118,6 +121,7 @@ class GraphTXT(GraphBase):
             vertex_type = VertexType(int(vertex_type))
         vertex_id = self.number_vertices
         vertex_txt = VertexTXT(vertex_type, word, word_vector, vertex_id)
+        word = vertex_txt.word
         self.vertex_list.append(vertex_txt)
         self.vertex_dict[word] = vertex_id
         self.neighbors_lists[word] = []
@@ -126,6 +130,9 @@ class GraphTXT(GraphBase):
         return self.number_vertices
 
     def add_edge(self, edge):
+        '''
+        edge: list containing vertex_in, vertex_out, edge_weight
+        '''
         vertex_in, vertex_out, edge_weight = edge
         edge_id = self.number_edges
         edge_txt = EdgeTXT(vertex_in, vertex_out, edge_weight, edge_id)
