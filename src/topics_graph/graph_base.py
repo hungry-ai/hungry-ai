@@ -25,12 +25,6 @@ class GraphBase(ABC):
     def get_vertex_with_name(self, name):
         pass
 
-    # Returns the i-th neighbor of the vertex v.
-    # This function is used to iterate through all neighbors of a vertex.
-    @abstractmethod
-    def get_neighbor(self, v, i):
-        pass
-
     # Returns the edge (v,u) where v and u are vertex IDs. Returns None if there is no edge.
     @abstractmethod
     def get_edge(self, v, u):

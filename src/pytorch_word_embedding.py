@@ -31,31 +31,49 @@ words = ["Food", "Cuisine", "Taste", "Delicious", "Meal", "Recipe", "Cooking", "
          "hazelnuts", "beef", "pork", "chicken", "turkey", "duck", "lamb", "veal", "bacon", "sausage", "ham", "salmon", "tuna", 
          "cod", "halibut", "shrimp", "crab", "lobster", "oysters", "clams", "mussels", "scallops"]
 
+# Get rid of duplicates. 
+for i in range(len(words)):
+    words[i] = words[i].lower()
 words = list(set(words))
 
 # Load the pre-trained word embeddings
 glove = torchtext.vocab.GloVe(name='6B', dim=50)
 word_embedding_basic_1 = WordEmbeddingBasic(50)
 
+# Load words into word_embedding_basic
 words_kept = 0
 for word in words:
-    word = word.lower()
     if word in glove.stoi:
         word_embedding = glove.vectors[glove.stoi[word.lower()]]
         word_embedding_list = word_embedding.numpy().tolist()
         word_embedding_basic_1.add_word_vector((word, word_embedding_list))
         words_kept += 1
-
 print("Number of words kept: " + str(words_kept))
+
 graph_txt_1 = graph_txt.GraphTXT()
 topics_utils.generate_topics_graph(word_embedding_basic_1, graph_txt_1)
+# This should be equal number of words kept as printed earlier.
 print(graph_txt_1.number_vertices)
+# Add additional user and image vertices.
+vertex1 = [0, 'Zozo', None]
+vertex2 = [1, 'Ramen Image', None]
+id_1 = graph_txt_1.add_vertex(vertex1)
+id_2 = graph_txt_1.add_vertex(vertex2)
+vertex_1_word = graph_txt_1.get_vertex(id_1).word
+vertex_2_word = graph_txt_1.get_vertex(id_2).word
+print(vertex_1_word)
+print(vertex_2_word)
+graph_txt_1.add_edge([vertex_1_word, 'juice', 3.0])
+graph_txt_1.add_edge(['juice', vertex_2_word, 2.0])
+result = graph_txt_1.get_recommendations(vertex_1_word, 1)
+print(result)
 
+# Check if graph_to_file and load_graph work.
 graph_txt_1.graph_to_file()
 graph_txt_2 = graph_txt.GraphTXT("sample.txt")
 
+# Put stuff in digraph.
 net = nx.DiGraph()
-
 for i in range(graph_txt_1.number_of_vertices()):
     vertex = graph_txt_1.get_vertex(i)
     net.add_node(vertex.word)

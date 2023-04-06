@@ -1,5 +1,6 @@
 from enum import Enum
 from .graph_base import GraphBase
+import heapq
 
 class VertexType(Enum):
     USER = 0
@@ -41,7 +42,8 @@ class GraphTXT(GraphBase):
         self.vertex_dict = dict()
         # Keys are words. self.neighbors_lists[word] is a list of vertex_id's such 
         # that there is an edge from word to each vertex_id.
-        self.neighbors_lists = dict()
+        self.out_neighbors_lists = dict()
+        self.in_neighbors_lists = dict()
         # Keys are words. self.neighbors_dicts[word] is a dictionary where keys are 
         # words. self.neighbors_dicts[word_1][word_2] exists iff there is a edge from
         # word_1 to word_2 and the value is the edge_id of said edge.
@@ -74,6 +76,14 @@ class GraphTXT(GraphBase):
     # Returns number of edges of the graph.
     def number_of_edges(self):
         return self.number_edges
+    
+    # Returns number of edges coming into v.
+    def get_in_degree(self, v):
+        return len(self.in_neighbors_lists[v])
+
+    # Returns number of edges going out of v.
+    def get_out_degree(self, v):
+        return len(self.out_neighbors_lists[v])
 
     # Returns the i-th vertex of the graph.
     # This function is used to iterate through all vertices.
@@ -88,26 +98,47 @@ class GraphTXT(GraphBase):
             vertex_id = self.vertex_dict[name]
             return self.vertex_list[vertex_id]
         return None
-
+    
+    # Returns i-th edge of the graph.
+    # This functon is used to iterate through all edges.
     def get_edge(self, i):
         if 0 <= i and i < self.number_edges:
             return self.edge_list[i]
         return None
 
-    # Returns the edge (v,u) where v and u are vertex IDs. Returns None if there is no edge.
+    # Returns the edge (v,u) where v and u are vertex names or words. Returns None if there is no edge.
     def get_edge_with_name(self, v, u):
         if v in self.neighbors_dicts and u in self.neighbors_dicts[v]:
             edge_id = self.neighbors_dicts[v][u]
             return self.edge_list[edge_id]
         return None
     
-    # Returns the i-th neighbor of the vertex v.
+    # Returns the i-th outgoing neighbor, call it u, of the vertex v.
+    # Outgoing as in, there is an edge from v to u.
     # This function is used to iterate through all neighbors of a vertex.
-    def get_neighbor(self, v, i):
-        if v in self.neighbors_lists and 0 <= i and i < len(self.neighbors_lists[v]):
-            neighbor_word = self.neighbors_lists[v][i]
+    def get_out_neighbor(self, v, i):
+        if v in self.out_neighbors_lists and 0 <= i and i < len(self.out_neighbors_lists[v]):
+            neighbor_word = self.out_neighbors_lists[v][i]
             return self.vertex_dict[neighbor_word]
         return None
+    
+    # Returns the i-th incoming neighbor, call it u, of the vertex v.
+    # Incoming as in, there is an edge from u to v.
+    # This function is used to iterate through all neighbors of a vertex.
+    def get_in_neighbor(self, v, i):
+        if v in self.in_neighbors_lists and 0 <= i and i < len(self.in_neighbors_lists[v]):
+            neighbor_word = self.in_neighbors_lists[v][i]
+            return self.vertex_dict[neighbor_word]
+        return None
+    
+    def add_topic_vertex(self, vertex):
+        return self.add_vertex(vertex)
+    
+    def add_user_vertex(self, vertex):
+        pass
+
+    def add_image_vertex(self, vertex):
+        pass
     
     def add_vertex(self, vertex):
         '''
@@ -116,31 +147,41 @@ class GraphTXT(GraphBase):
         if len(vertex) == 2:
             word, word_vector = vertex
             vertex_type = VertexType.TOPIC
-        else:
+        elif len(vertex) == 3:
             vertex_type, word, word_vector = vertex
             vertex_type = VertexType(int(vertex_type))
+            if vertex_type == VertexType.USER or vertex_type == VertexType.IMAGE:
+                word_vector = word
+        else: 
+            raise TypeError("Add vertex failed! Not enough elements to parse!")
         vertex_id = self.number_vertices
         vertex_txt = VertexTXT(vertex_type, word, word_vector, vertex_id)
         word = vertex_txt.word
         self.vertex_list.append(vertex_txt)
         self.vertex_dict[word] = vertex_id
-        self.neighbors_lists[word] = []
+        self.out_neighbors_lists[word] = []
+        self.in_neighbors_lists[word] = []
         self.neighbors_dicts[word] = dict()
         self.number_vertices += 1
-        return self.number_vertices
+        return vertex_id
 
+    # Adds a directed edge to the graph.
     def add_edge(self, edge):
         '''
-        edge: list containing vertex_in, vertex_out, edge_weight
+        edge: List (or tuple) containing vertex_out, vertex_in, edge_weight
+              The edge is from vertex_out to vertex_in, written as (vertex_out, vertex_in).
         '''
-        vertex_in, vertex_out, edge_weight = edge
+        vertex_out, vertex_in, edge_weight = edge
+        if vertex_in not in self.vertex_dict and vertex_out not in self.vertex_dict:
+            raise ValueError("Edge can't be added because vertices don't exist!")
         edge_id = self.number_edges
-        edge_txt = EdgeTXT(vertex_in, vertex_out, edge_weight, edge_id)
+        edge_txt = EdgeTXT(vertex_out, vertex_in, edge_weight, edge_id)
         self.edge_list.append(edge_txt)
-        self.neighbors_lists[vertex_in].append(vertex_out)
-        self.neighbors_dicts[vertex_in][vertex_out] = edge_id
+        self.out_neighbors_lists[vertex_out].append(vertex_in)
+        self.in_neighbors_lists[vertex_in].append(vertex_out)
+        self.neighbors_dicts[vertex_out][vertex_in] = edge_id
         self.number_edges += 1
-        return self.number_edges
+        return edge_id
 
     # Adds a vertex to the graph.
     def add_vertex_from_string(self, vertex_string):
@@ -160,9 +201,9 @@ class GraphTXT(GraphBase):
         if len(edge_items) != 3:
             print("CSV file format incorrect! Current line is not correct format for edge!")
             return None
-        vertex_in, vertex_out, edge_weight = edge_items
+        vertex_out, vertex_in, edge_weight = edge_items
         edge_weight = float(edge_weight)
-        return self.add_edge((vertex_in, vertex_out, edge_weight))
+        return self.add_edge((vertex_out, vertex_in, edge_weight))
     
     def graph_to_file(self, filename = None):
         if filename == None:
@@ -176,3 +217,27 @@ class GraphTXT(GraphBase):
                 edge = self.edge_list[i]
                 file.write(edge.vertex_out + " " + edge.vertex_in + " " + str(edge.edge_weight) + "\n")
         return filename
+
+    def get_recommendations(self, username, number_of_recommendations):
+        distances = dict()
+        for i in range(self.number_of_vertices()):
+            vertex = self.get_vertex(i)
+            distances[vertex.word] = (float('infinity'), None)
+        
+        distances[username] = (0.0, None)
+        priority_queue = [(0.0, username, None)]
+
+        while priority_queue:
+            current_distance, current_vertex, previous = heapq.heappop(priority_queue)
+
+            if current_distance > distances[current_vertex][0]:
+                continue
+
+            for neighbor in self.out_neighbors_lists[current_vertex]:
+                distance = current_distance + self.get_edge_with_name(current_vertex, neighbor).edge_weight
+                
+                if distance < distances[neighbor][0]:
+                    distances[neighbor] = (distance, current_vertex)
+                    heapq.heappush(priority_queue, (distance, neighbor, current_vertex))
+
+        return distances
