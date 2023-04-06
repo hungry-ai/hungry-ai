@@ -40,14 +40,16 @@ class GraphTXT(GraphBase):
         # Keys are words. self.vertex_dict[word] is a VertexTXT object, v, 
         # such that v.word = word.
         self.vertex_dict = dict()
-        # Keys are words. self.neighbors_lists[word] is a list of vertex_id's such 
+        # Keys are words. self.edge_dict[word] is a dictionary where keys are 
+        # words. self.edge_dict[word_1][word_2] exists iff there is a edge from
+        # word_1 to word_2 and the value is the edge_id of said edge.
+        self.edge_dict = dict()
+        # Keys are words. self.out_neighbors_lists[word] is a list of vertex_id's such 
         # that there is an edge from word to each vertex_id.
         self.out_neighbors_lists = dict()
+        # Keys are words. self.in_neighbors_lists[word] is a list of vertex_id's such 
+        # that there is an edge from vertex_id to word.
         self.in_neighbors_lists = dict()
-        # Keys are words. self.neighbors_dicts[word] is a dictionary where keys are 
-        # words. self.neighbors_dicts[word_1][word_2] exists iff there is a edge from
-        # word_1 to word_2 and the value is the edge_id of said edge.
-        self.neighbors_dicts = dict()
         self.number_edges = 0
         self.number_vertices = 0
         if file_name != None:
@@ -108,8 +110,8 @@ class GraphTXT(GraphBase):
 
     # Returns the edge (v,u) where v and u are vertex names or words. Returns None if there is no edge.
     def get_edge_with_name(self, v, u):
-        if v in self.neighbors_dicts and u in self.neighbors_dicts[v]:
-            edge_id = self.neighbors_dicts[v][u]
+        if v in self.edge_dict and u in self.edge_dict[v]:
+            edge_id = self.edge_dict[v][u]
             return self.edge_list[edge_id]
         return None
     
@@ -159,9 +161,9 @@ class GraphTXT(GraphBase):
         word = vertex_txt.word
         self.vertex_list.append(vertex_txt)
         self.vertex_dict[word] = vertex_id
+        self.edge_dict[word] = dict()
         self.out_neighbors_lists[word] = []
         self.in_neighbors_lists[word] = []
-        self.neighbors_dicts[word] = dict()
         self.number_vertices += 1
         return vertex_id
 
@@ -179,7 +181,7 @@ class GraphTXT(GraphBase):
         self.edge_list.append(edge_txt)
         self.out_neighbors_lists[vertex_out].append(vertex_in)
         self.in_neighbors_lists[vertex_in].append(vertex_out)
-        self.neighbors_dicts[vertex_out][vertex_in] = edge_id
+        self.edge_dict[vertex_out][vertex_in] = edge_id
         self.number_edges += 1
         return edge_id
 
