@@ -237,8 +237,8 @@ class GraphTXT(GraphBase):
             if current_distance > distances[current_vertex][0]:
                 continue
 
-            if self.vertex_dict[current_vertex].type == VertexType.IMAGE:
-                recommended_images.push_back((current_vertex, current_distance))
+            if self.vertex_list[self.vertex_dict[current_vertex]].type == VertexType.IMAGE:
+                recommended_images.append((current_vertex, current_distance))
 
             for neighbor in self.out_neighbors_lists[current_vertex]:
                 distance = current_distance + self.get_edge_with_name(current_vertex, neighbor).edge_weight
