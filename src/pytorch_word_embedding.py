@@ -59,8 +59,8 @@ vertex1 = [0, 'Zozo', None]
 vertex2 = [1, 'Ramen Image', None]
 id_1 = graph_txt_1.add_vertex(vertex1)
 id_2 = graph_txt_1.add_vertex(vertex2)
-vertex_1_word = graph_txt_1.get_vertex(id_1).word
-vertex_2_word = graph_txt_1.get_vertex(id_2).word
+vertex_1_word = graph_txt_1.get_vertex(id_1).name
+vertex_2_word = graph_txt_1.get_vertex(id_2).name
 print(vertex_1_word)
 print(vertex_2_word)
 graph_txt_1.add_edge([vertex_1_word, 'juice', 3.0])
@@ -76,7 +76,7 @@ graph_txt_2 = graph_txt.GraphTXT("sample.txt")
 net = nx.DiGraph()
 for i in range(graph_txt_1.number_of_vertices()):
     vertex = graph_txt_1.get_vertex(i)
-    net.add_node(vertex.word)
+    net.add_node(vertex.name)
 for i in range(graph_txt_1.number_of_edges()):
     edge = graph_txt_1.get_edge(i)
     net.add_edge(edge.vertex_out, edge.vertex_in, arrows = "to")

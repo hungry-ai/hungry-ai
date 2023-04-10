@@ -8,23 +8,25 @@ class VertexType(Enum):
     TOPIC = 2
 
 class VertexTXT():
-    def __init__(self, vertex_type, word, word_vector, id = None):
+    def __init__(self, vertex_type, name, value, id = None):
         self.type = vertex_type
         # If the graph type isn't a topic, the word is just image_743
         # or user_8294. Whatever the id is. 
         if self.type == VertexType.USER:
-            self.word = "user_" + str(id)
+            self.name = "user_" + str(id)
         elif self.type == VertexType.IMAGE:
-            self.word = "image_" + str(id)
+            self.name = "image_" + str(id)
         elif self.type == VertexType.TOPIC:
-            self.word = word
+            self.name = name
         else:
             raise TypeError("Input vertex_type = " + str(self.type) + " is not one of USER, IMAGE, TOPIC.")
-        self.word_vector = word_vector
+        self.value = value
         self.id = id
 
 class EdgeTXT():
     def __init__(self, vertex_out, vertex_in, edge_weight, id = None):
+        # The edge is from vertex_out to vertex_in.
+        # In other words, vertex_out is the source and vertex_in is the sink.
         self.vertex_out = vertex_out
         self.vertex_in = vertex_in
         self.edge_weight = edge_weight
@@ -38,7 +40,7 @@ class GraphTXT(GraphBase):
         # List of edges of graph. self.edge_list[k] is the edge with id k.
         self.edge_list = []
         # Keys are words. self.vertex_dict[word] is a VertexTXT object, v, 
-        # such that v.word = word.
+        # such that v.name = word.
         self.vertex_dict = dict()
         # Keys are words. self.edge_dict[word] is a dictionary where keys are 
         # words. self.edge_dict[word_1][word_2] exists iff there is a edge from
@@ -147,23 +149,23 @@ class GraphTXT(GraphBase):
         vertex: list containing (optional: vertex_type), word, word_vector
         '''
         if len(vertex) == 2:
-            word, word_vector = vertex
+            name, value = vertex
             vertex_type = VertexType.TOPIC
         elif len(vertex) == 3:
-            vertex_type, word, word_vector = vertex
+            vertex_type, name, value = vertex
             vertex_type = VertexType(int(vertex_type))
             if vertex_type == VertexType.USER or vertex_type == VertexType.IMAGE:
-                word_vector = word
+                value = name
         else: 
             raise TypeError("Add vertex failed! Not enough elements to parse!")
         vertex_id = self.number_vertices
-        vertex_txt = VertexTXT(vertex_type, word, word_vector, vertex_id)
-        word = vertex_txt.word
+        vertex_txt = VertexTXT(vertex_type, name, value, vertex_id)
+        name = vertex_txt.name
         self.vertex_list.append(vertex_txt)
-        self.vertex_dict[word] = vertex_id
-        self.edge_dict[word] = dict()
-        self.out_neighbors_lists[word] = []
-        self.in_neighbors_lists[word] = []
+        self.vertex_dict[name] = vertex_id
+        self.edge_dict[name] = dict()
+        self.out_neighbors_lists[name] = []
+        self.in_neighbors_lists[name] = []
         self.number_vertices += 1
         return vertex_id
 
@@ -214,7 +216,7 @@ class GraphTXT(GraphBase):
             file.write(str(self.number_of_vertices()) + " " + str(self.number_of_edges()) + "\n")
             for i in range(self.number_of_vertices()):
                 vertex = self.get_vertex(i)
-                file.write(str(vertex.type.value) + " " + vertex.word + " " + str(vertex.word_vector) + "\n")
+                file.write(str(vertex.type.value) + " " + vertex.name + " " + str(vertex.value) + "\n")
             for i in range(self.number_of_edges()):
                 edge = self.edge_list[i]
                 file.write(edge.vertex_out + " " + edge.vertex_in + " " + str(edge.edge_weight) + "\n")
@@ -224,16 +226,19 @@ class GraphTXT(GraphBase):
         distances = dict()
         for i in range(self.number_of_vertices()):
             vertex = self.get_vertex(i)
-            distances[vertex.word] = (float('infinity'), None)
+            distances[vertex.name] = (float('infinity'), None)
         
         distances[username] = (0.0, None)
         priority_queue = [(0.0, username, None)]
+        recommended_images = []
 
         while priority_queue:
             current_distance, current_vertex, previous = heapq.heappop(priority_queue)
-
             if current_distance > distances[current_vertex][0]:
                 continue
+
+            if self.vertex_dict[current_vertex].type == VertexType.IMAGE:
+                recommended_images.push_back((current_vertex, current_distance))
 
             for neighbor in self.out_neighbors_lists[current_vertex]:
                 distance = current_distance + self.get_edge_with_name(current_vertex, neighbor).edge_weight
@@ -242,4 +247,4 @@ class GraphTXT(GraphBase):
                     distances[neighbor] = (distance, current_vertex)
                     heapq.heappush(priority_queue, (distance, neighbor, current_vertex))
 
-        return distances
+        return (recommended_images, distances)
