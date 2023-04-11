@@ -9,9 +9,10 @@ class VertexType(Enum):
 
 class VertexTXT():
     def __init__(self, vertex_type, name, value, id = None):
-        if vertex_type not in [VertexType.USER, VertexType.IMAGE, VertexType.IMAGE]: 
-            raise TypeError("Input vertex_type = " + str(self.type) + " is not one of USER, IMAGE, TOPIC.")
+        if vertex_type not in [VertexType.USER, VertexType.IMAGE, VertexType.TOPIC]: 
+            raise TypeError("Input vertex_type = " + str(vertex_type) + " is not one of USER, IMAGE, TOPIC.")
         self.type = vertex_type
+        self.name = name
         self.value = value
         self.id = id
 
