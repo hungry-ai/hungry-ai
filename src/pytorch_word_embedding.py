@@ -56,7 +56,7 @@ topics_utils.generate_topics_graph(word_embedding_basic_1, graph_txt_1)
 print(graph_txt_1.number_vertices)
 # Add additional user and image vertices.
 vertex1 = [0, 'Zozo', None]
-vertex2 = [1, 'Ramen Image', None]
+vertex2 = [1, 'RamenImage', None]
 id_1 = graph_txt_1.add_vertex(vertex1)
 id_2 = graph_txt_1.add_vertex(vertex2)
 vertex_1_word = graph_txt_1.get_vertex(id_1).name

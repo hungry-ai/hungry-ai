@@ -63,7 +63,9 @@ class GraphTXT(GraphBase):
                 if self.add_vertex_from_string(file.readline()) == None:
                     raise ValueError("Failed attempting to load vertex. Line number in file: " + str(1 + i))
             for i in range(edge_count):
-                if self.add_edge_from_string(file.readline()) == None:
+                curr_line = file.readline()
+                if self.add_edge_from_string(curr_line) == None:
+                    print(curr_line)
                     raise ValueError("Failed attempting to load edge. Line number in file: " + str(1 + vertex_count + i))
 
     # Returns number of vertices of the graph.
