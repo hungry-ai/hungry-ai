@@ -9,17 +9,9 @@ class VertexType(Enum):
 
 class VertexTXT():
     def __init__(self, vertex_type, name, value, id = None):
-        self.type = vertex_type
-        # If the graph type isn't a topic, the word is just image_743
-        # or user_8294. Whatever the id is. 
-        if self.type == VertexType.USER:
-            self.name = "user_" + str(id)
-        elif self.type == VertexType.IMAGE:
-            self.name = "image_" + str(id)
-        elif self.type == VertexType.TOPIC:
-            self.name = name
-        else:
+        if vertex_type not in [VertexType.USER, VertexType.IMAGE, VertexType.IMAGE]: 
             raise TypeError("Input vertex_type = " + str(self.type) + " is not one of USER, IMAGE, TOPIC.")
+        self.type = vertex_type
         self.value = value
         self.id = id
 
@@ -135,8 +127,8 @@ class GraphTXT(GraphBase):
             return self.vertex_dict[neighbor_word]
         return None
     
-    def add_topic_vertex(self, vertex):
-        return self.add_vertex(vertex)
+    def add_topic_vertex(self, word, word_vector):
+        return self.add_vertex((word, word_vector))
     
     def add_user_vertex(self, vertex):
         pass
@@ -154,8 +146,6 @@ class GraphTXT(GraphBase):
         elif len(vertex) == 3:
             vertex_type, name, value = vertex
             vertex_type = VertexType(int(vertex_type))
-            if vertex_type == VertexType.USER or vertex_type == VertexType.IMAGE:
-                value = name
         else: 
             raise TypeError("Add vertex failed! Not enough elements to parse!")
         vertex_id = self.number_vertices
