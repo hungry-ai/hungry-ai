@@ -1,3 +1,4 @@
+import heapq
 from enum import Enum
 from .graph_base import GraphBase
 
@@ -7,20 +8,19 @@ class VertexType(Enum):
     TOPIC = 2
 
 class VertexTXT():
-    def __init__(self, vertex_type, word, word_vector, id = None):
+    def __init__(self, vertex_type, username, value, vertex_id):
+        if vertex_type not in [VertexType.USER, VertexType.IMAGE, VertexType.IMAGE]: 
+            raise TypeError("Input vertex_type = " + str(vertex_type) + " is not one of USER, IMAGE, TOPIC.")
         self.type = vertex_type
-        # If the graph type isn't a topic, the word is just image_743
-        # or user_8294. Whatever the id is. 
+        self.value = value
+        self.username = username
         if self.type == VertexType.USER:
-            self.word = "user_" + str(id)
+            self.name = "user_" + str(vertex_id)
         elif self.type == VertexType.IMAGE:
-            self.word = "image_" + str(id)
-        elif self.type == VertexType.TOPIC:
-            self.word = word
+            self.name = "image_" + str(vertex_id)
         else:
-            raise TypeError("Input vertex_type = " + str(self.type) + " is not one of USER, IMAGE, TOPIC.")
-        self.word_vector = word_vector
-        self.id = id
+            self.name = username
+        self.vertex_id = vertex_id
 
 class EdgeTXT():
     def __init__(self, vertex_out, vertex_in, edge_weight, id = None):
@@ -48,12 +48,12 @@ class GraphTXT(GraphBase):
         self.neighbors_dicts = dict()
         self.number_edges = 0
         self.number_vertices = 0
-        if file_name != None:
+        if file_name:
             self.load_graph()
     
     # Loads a graph from csv file.
     def load_graph(self):
-        with open(self.file_name, 'r') as file:
+        with open(self.file_name, 'r', encoding="utf-8") as file:
             line_list = file.readline().split(' ')
             if len(line_list)!= 2:
                 raise ValueError("CSV formatted incorrectly! First line must contain 2 items!")
@@ -61,10 +61,10 @@ class GraphTXT(GraphBase):
             vertex_count = int(vertex_count)
             edge_count = int(edge_count)
             for i in range(vertex_count):
-                if self.add_vertex_from_string(file.readline()) == None:
+                if self.add_vertex_from_string(file.readline()) is None:
                     raise ValueError("Failed attempting to load vertex. Line number in file: " + str(1 + i))
             for i in range(edge_count):
-                if self.add_edge_from_string(file.readline()) == None:
+                if self.add_edge_from_string(file.readline()) is None:
                     raise ValueError("Failed attempting to load edge. Line number in file: " + str(1 + vertex_count + i))
 
     # Returns number of vertices of the graph.
@@ -165,9 +165,9 @@ class GraphTXT(GraphBase):
         return self.add_edge((vertex_in, vertex_out, edge_weight))
     
     def graph_to_file(self, filename = None):
-        if filename == None:
+        if filename is None:
             filename = "sample.txt"
-        with open(filename, "w") as file:
+        with open(filename, "w", encoding="utf-8") as file:
             file.write(str(self.number_of_vertices()) + " " + str(self.number_of_edges()) + "\n")
             for i in range(self.number_of_vertices()):
                 vertex = self.get_vertex(i)
