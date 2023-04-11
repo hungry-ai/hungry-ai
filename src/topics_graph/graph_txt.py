@@ -176,7 +176,7 @@ class GraphTXT(GraphBase):
               The edge is from vertex_out to vertex_in, written as (vertex_out, vertex_in).
         '''
         vertex_out, vertex_in, edge_weight = edge
-        if vertex_in not in self.vertex_dict and vertex_out not in self.vertex_dict:
+        if vertex_in not in self.vertex_dict or vertex_out not in self.vertex_dict:
             raise ValueError("Edge can't be added because vertices don't exist!")
         edge_id = self.number_edges
         edge_txt = EdgeTXT(vertex_out, vertex_in, edge_weight, edge_id)
