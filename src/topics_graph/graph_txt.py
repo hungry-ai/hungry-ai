@@ -130,11 +130,11 @@ class GraphTXT(GraphBase):
     def add_topic_vertex(self, word, word_vector):
         return self.add_vertex((word, word_vector))
     
-    def add_user_vertex(self, vertex):
-        pass
+    def add_user_vertex(self, username):
+        return self.add_vertex((int(VertexType.USER), username, None))
 
-    def add_image_vertex(self, vertex):
-        pass
+    def add_image_vertex(self, image_name):
+        return self.add_vertex((int(VertexType.IMAGE), image_name, None))
     
     def add_vertex(self, vertex):
         '''
