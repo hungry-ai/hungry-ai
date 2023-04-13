@@ -100,14 +100,17 @@ def image_service(
 
 
 @pytest.fixture(scope="function")
-def user_service(user_db: UserDB) -> UserService:
+def user_service(user_db: UserDB, graph_service: GraphService) -> UserService:
     user_db.insert(User("u1", "a@gmail.com", hash("a")))
+    graph_service.add_user("u1")
 
-    return UserService(user_db)
+    return UserService(user_db, graph_service)
 
 
 @pytest.fixture(scope="function")
 def review_service(review_db: ReviewDB, graph_service: GraphService) -> ReviewService:
+    graph_service.add_user("u1")
+
     graph_service.add_image("i1")
     graph_service.add_image("i2")
 

@@ -2,6 +2,7 @@ from hashlib import sha256
 from uuid import uuid4
 
 from ..db import User, UserDB
+from ..graph import GraphService
 
 
 def hash(x: str) -> str:
@@ -9,8 +10,9 @@ def hash(x: str) -> str:
 
 
 class UserService:
-    def __init__(self, user_db: UserDB) -> None:
+    def __init__(self, user_db: UserDB, graph_service: GraphService) -> None:
         self.user_db = user_db
+        self.graph_service = graph_service
 
     def sign_up(self, email: str, password: str) -> None:
         users = self.user_db.select(email=email)
@@ -22,6 +24,7 @@ class UserService:
         password_hash = hash(password)
         user = User(user_id, email, password_hash)
         self.user_db.insert(user)
+        self.graph_service.add_user(user_id)
 
     def sign_in(self, email: str, password: str) -> User:
         users = self.user_db.select(email=email)

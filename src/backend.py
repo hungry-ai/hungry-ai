@@ -20,7 +20,7 @@ class Backend:
         self.tag_service = TagService(tag_db)
 
         user_db = UserDB(root / "users.csv")
-        self.user_service = UserService(user_db)
+        self.user_service = UserService(user_db, graph_service)
 
         image_db = ImageDB(root / "images.csv")
         self.image_service = ImageService(image_db, self.tag_service, graph_service)

@@ -21,6 +21,7 @@ class ImageService:
         image_id = str(uuid4())
         image = Image(image_id, url)
         self.image_db.insert(image)
+        self.graph_service.add_image(image_id)
 
         tags = self.tag_service.get_tags()
         probabilities = self.pr_match(image.url, [tag.name for tag in tags])
