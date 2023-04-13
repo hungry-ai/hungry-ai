@@ -1,11 +1,11 @@
 from pathlib import Path
 
-from .db import EdgeDB, ImageDB, RecommendationDB, ReviewDB, TopicDB, UserDB
+from .db import EdgeDB, ImageDB, RecommendationDB, ReviewDB, TagDB, UserDB
 from .graph import GraphService
 from .images import ImageService
 from .recommender import RecommenderService
 from .reviews import ReviewService
-from .topics import TopicService
+from .tags import TagService
 from .users import UserService
 
 
@@ -16,19 +16,17 @@ class Backend:
         edge_db = EdgeDB(root / "edges.csv")
         graph_service = GraphService(edge_db)
 
-        topic_db = TopicDB(root / "topics.csv")
-        self.topic_service = TopicService(topic_db)
+        tag_db = TagDB(root / "tags.csv")
+        self.tag_service = TagService(tag_db)
 
         user_db = UserDB(root / "users.csv")
         self.user_service = UserService(user_db)
 
         image_db = ImageDB(root / "images.csv")
-        self.image_service = ImageService(image_db, self.topic_service, graph_service)
+        self.image_service = ImageService(image_db, self.tag_service, graph_service)
 
         review_db = ReviewDB(root / "reviews.csv")
         self.review_service = ReviewService(review_db, graph_service)
 
         recommendation_db = RecommendationDB(root / "recommendations.csv")
-        self.recommender_service = RecommenderService(
-            recommendation_db, self.review_service
-        )
+        self.recommender_service = RecommenderService(recommendation_db, graph_service)
