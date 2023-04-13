@@ -18,7 +18,7 @@ from src.db import (
     UserDB,
 )
 from src.frontend import Frontend
-from src.graph import GraphService
+from src.graph import GraphService, LocalGraph
 from src.images import ImageService
 from src.recommender import RecommenderService
 from src.reviews import ReviewService
@@ -74,8 +74,14 @@ def recommendation_db(root: Path) -> RecommendationDB:
 
 
 @pytest.fixture(scope="function")
-def graph_service(edge_db: EdgeDB) -> GraphService:
-    return GraphService(edge_db)
+def graph_service() -> GraphService:
+    graph = LocalGraph()
+
+    graph.add_tag("t1")
+    graph.add_tag("t2")
+    graph.add_tag("t3")
+
+    return GraphService(graph)
 
 
 @pytest.fixture(scope="function")
@@ -102,6 +108,9 @@ def user_service(user_db: UserDB) -> UserService:
 
 @pytest.fixture(scope="function")
 def review_service(review_db: ReviewDB, graph_service: GraphService) -> ReviewService:
+    graph_service.add_image("i1")
+    graph_service.add_image("i2")
+
     graph_service.add_image_edge("i1", "t1", 0.8)
     graph_service.add_image_edge("i2", "t1", 0.8)
     graph_service.add_image_edge("i2", "t2", 0.5)
@@ -114,9 +123,15 @@ def recommender_service(
     recommendation_db: RecommendationDB,
     graph_service: GraphService,
 ) -> RecommenderService:
+    graph_service.add_image("i1")
+    graph_service.add_image("i2")
+
     graph_service.add_image_edge("i1", "t1", 0.5)
     graph_service.add_image_edge("i1", "t2", 0.5)
     graph_service.add_image_edge("i2", "t1", 0.5)
+
+    graph_service.add_user("u1")
+    graph_service.add_user("u2")
 
     graph_service.add_user_edge("u1", "i1", 5.0)
     graph_service.add_user_edge("u2", "i1", 5.0)

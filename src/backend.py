@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from .db import EdgeDB, ImageDB, RecommendationDB, ReviewDB, TagDB, UserDB
-from .graph import GraphService
+from .graph import GraphService, LocalGraph
 from .images import ImageService
 from .recommender import RecommenderService
 from .reviews import ReviewService
@@ -13,8 +13,8 @@ class Backend:
     def __init__(self, root: Path = Path(__file__).parent.parent / "data") -> None:
         root.mkdir(exist_ok=True)
 
-        edge_db = EdgeDB(root / "edges.csv")
-        graph_service = GraphService(edge_db)
+        graph = LocalGraph()
+        graph_service = GraphService(graph)
 
         tag_db = TagDB(root / "tags.csv")
         self.tag_service = TagService(tag_db)
