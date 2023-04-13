@@ -4,10 +4,10 @@ import numpy as np
 
 from ..db import Edge, EdgeDB
 from .vertex import Vertex, VertexType
-from .graph import Graph
+from .local_graph import LocalGraph
 
 
-class GraphService(Graph):
+class GraphService(LocalGraph):
     def __init__(
         self,
         edge_db: EdgeDB,
@@ -87,8 +87,8 @@ class GraphService(Graph):
         weight = rating
         timestamp = datetime.datetime.now()
 
-        if to_vtx in self.out_neighbors[from_vtx]:
-            current_weight = self.out_neighbors[from_vtx][to_vtx]
+        if to_vtx in self.out_neighbors(from_vtx):
+            current_weight = self.out_neighbors(from_vtx)[to_vtx]
             current_timestamp = self.edge_timestamps[(from_vtx, to_vtx)]
             alpha = np.exp2(-(timestamp - current_timestamp) / self.rating_halflife)
             weight = weight * (1.0 - alpha) + current_weight * alpha
@@ -98,6 +98,6 @@ class GraphService(Graph):
     def predict_ratings(self, user_id: str) -> dict[str, float]:  # TODO
         return {
             vertex.id: 2.5
-            for vertex in self.out_neighbors
+            for vertex in self.vertices
             if vertex.type == VertexType.IMAGE.value
         }
