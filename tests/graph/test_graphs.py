@@ -1,13 +1,14 @@
-import pytest
 from pathlib import Path
 
-from src.graph import Graph, CSVGraph, LocalGraph, Vertex, VertexType
+import pytest
+
+from src.graph import CSVGraph, Graph, LocalGraph, Vertex, VertexType
 
 
 class TestGraph(Graph):
     def __init__(self) -> None:
-        self._vertices = set()
-        self._edges = set()
+        self._vertices: set[Vertex] = set()
+        self._edges: set[tuple[Vertex, Vertex, float]] = set()
 
     def add_vertex(self, vertex: Vertex) -> None:
         self._vertices.add(vertex)

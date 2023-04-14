@@ -1,8 +1,9 @@
+from pathlib import Path
+
+import pandas as pd  # type: ignore[import]
+
 from .graph import Graph
 from .vertex import Vertex, VertexType
-import heapq
-import pandas as pd  # type: ignore[import]
-from pathlib import Path
 
 
 class CSVGraph(Graph):

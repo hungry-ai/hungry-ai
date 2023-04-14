@@ -1,30 +1,16 @@
-import datetime
 from pathlib import Path
 
 import pytest
 
 from src.backend import Backend
-from src.db import (
-    EdgeDB,
-    Image,
-    ImageDB,
-    Recommendation,
-    RecommendationDB,
-    Review,
-    ReviewDB,
-    Tag,
-    TagDB,
-    User,
-    UserDB,
-)
+from src.db import EdgeDB, ImageDB, RecommendationDB, ReviewDB, Tag, TagDB, User, UserDB
 from src.frontend import Frontend
 from src.graph import GraphService, LocalGraph
 from src.images import ImageService
 from src.recommender import RecommenderService
 from src.reviews import ReviewService
 from src.tags import TagService
-from src.users import UserService, hash
-
+from src.users import UserService
 
 # DBs
 

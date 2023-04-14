@@ -1,10 +1,7 @@
-import datetime
-
-import numpy as np
 import warnings
 
-from .vertex import Vertex, VertexType
 from .graph import Graph
+from .vertex import Vertex, VertexType
 
 
 class GraphService:

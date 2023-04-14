@@ -1,7 +1,4 @@
-from src.db import Recommendation, RecommendationDB, ReviewDB
-from src.graph import GraphService
 from src.recommender import RecommenderService
-from src.reviews import ReviewService
 
 
 def test_predict_ratings(recommender_service: RecommenderService) -> None:

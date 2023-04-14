@@ -1,11 +1,11 @@
-from src.db import DB, DBSchema
+import datetime
 from dataclasses import dataclass
 from pathlib import Path
 
-import datetime
 import numpy as np
-import pandas as pd
 import pytest
+
+from src.db import DB, DBSchema
 
 
 @dataclass

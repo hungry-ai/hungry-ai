@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import heapq
+
 from ..db import RecommendationDB
 from ..graph import GraphService, Vertex, VertexType
-
-import heapq
 
 
 class RecommenderService:

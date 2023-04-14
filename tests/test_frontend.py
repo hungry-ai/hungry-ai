@@ -1,6 +1,5 @@
-from pathlib import Path
-
 import pytest
+
 from src.frontend import Frontend
 
 
@@ -28,9 +27,9 @@ def test_search(frontend: Frontend) -> None:
         frontend.search("", "", "cody")
         == """\
 Recommended images:
-	food.jpg
+    food.jpg
 My reviews:
-	5 - food.jpg
+    5 - food.jpg
 My stats:
 No stats available."""
     )

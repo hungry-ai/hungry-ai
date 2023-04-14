@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from .backend import Backend
-from .db import Image, User
 
 
 class Frontend:
@@ -59,24 +58,27 @@ class Frontend:
 def main() -> None:
     frontend = Frontend()
 
-    instructions = "Commands:\n- story_mention <instagram_username> <image_url> <rating>\n- search <query> <location> <instagram_username>"
+    instructions = """\
+Commands:
+- story_mention <instagram_username> <image_url> <rating>
+- search <query> <location> <instagram_username>"""
     print(instructions)
 
     while True:
         req = input().split()
 
-        if req[0] == "story_mention" and len(req) == 3:
+        if req[0] == "story_mention" and len(req) == 4:
             if len(req) != 3:
                 print(
                     "Wrong number of arguments: story_mention <instagram_username> <image_url> <rating>"
                 )
-            resp = frontend.story_mention(req[1], req[2])
-        elif req[0] == "search" and len(req) == 3:
+            resp = frontend.story_mention(req[1], req[2], int(req[3]))
+        elif req[0] == "search" and len(req) == 4:
             if len(req) != 3:
                 print(
                     "Wrong number of arguments: search <query> <location> <instagram_username>"
                 )
-            resp = frontend.sign_in(req[1], req[2])
+            resp = frontend.search(req[1], req[2], req[3])
         else:
             print("Unrecognized command")
 

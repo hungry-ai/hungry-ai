@@ -1,1 +1,3 @@
-from .user_service import UserService, hash
+from .user_service import UserService
+
+__all__ = ["UserService"]

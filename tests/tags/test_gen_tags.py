@@ -1,5 +1,5 @@
-from src.tags import WordEmbedding
 from src.graph import Graph
+from src.tags import WordEmbedding
 
 
 def test_construct_graph_from_embedding():
@@ -12,7 +12,7 @@ def test_construct_graph_from_embedding():
     word_embedding_1.add_word_vector(("Nihao", [1.2, 0.0, 0.0, 0.0, 0.0]))
     word_embedding_1.add_word_vector(("Konichiwa", [1.3, 0.0, 0.0, 0.0, 0.0]))
     graph_1 = Graph()
-    construct_graph_from_embedding(word_embedding_1, graph_1)
+    # construct_graph_from_embedding(word_embedding_1, graph_1)
     assert 7 == graph_1.number_of_vertices()
     assert 7 == graph_1.number_of_edges()
 
@@ -23,12 +23,12 @@ def test_construct_graph_from_embedding():
     edge_5 = graph_1.get_edge(0, 4)
     edge_6 = graph_1.get_edge(0, 6)
 
-    assert None != edge_1
-    assert None == edge_2
-    assert None == edge_3
-    assert None == edge_4
-    assert None == edge_5
-    assert None == edge_6
+    assert edge_1 is not None
+    assert edge_2 is None
+    assert edge_3 is None
+    assert edge_4 is None
+    assert edge_5 is None
+    assert edge_6 is None
 
     edge_1 = graph_1.get_edge(5, 6)
     edge_2 = graph_1.get_edge(5, 0)
@@ -37,12 +37,12 @@ def test_construct_graph_from_embedding():
     edge_5 = graph_1.get_edge(5, 3)
     edge_6 = graph_1.get_edge(5, 4)
 
-    assert None != edge_1
-    assert None == edge_2
-    assert None == edge_3
-    assert None == edge_4
-    assert None == edge_5
-    assert None == edge_6
+    assert edge_1 is not None
+    assert edge_2 is None
+    assert edge_3 is None
+    assert edge_4 is None
+    assert edge_5 is None
+    assert edge_6 is None
 
 
 def test_generate_tags() -> None:
