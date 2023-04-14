@@ -1,22 +1,25 @@
+from pathlib import Path
 import networkx as nx  # type: ignore[import]
 from pyvis.network import Network  # type: ignore[import]
-from .graph import Graph
+from .graph import Graph, Vertex
+
 
 
 def visualize(
     graph: Graph,
-    file_name: str = "graph_visualization.html",
+    labels: dict[Vertex,str],
+    file_name: Path = Path("src/graph/visualize.html"),
     weighted: bool = True,
     scaled: bool = True,
 ) -> None:
     """
-    Converts various objects into pyvis network object and outputs visualization as html.
-    obj : file name, OR word list, OR word embedding object, OR graph object
+    Converts graph into pyvis network object and outputs visualization as html.
+    graph: Graph object
     """
     if not file_name.endswith(".html"):
         raise ValueError("file_name must end with .html")
 
-    net = build_net(graph, weighted)
+    net = build_net(graph, labels, weighted)
     if scaled:
         in_dict = dict(net.in_degree)
         min_size = 5
@@ -33,19 +36,19 @@ def visualize(
     visual_net.show(file_name)
     print("Graph outputted to file: " + file_name)
 
-
-def build_net(graph: Graph, weighted: bool) -> nx.DiGraph:
+def build_net(graph: Graph, labels: dict[Vertex,str], weighted: bool) -> nx.DiGraph:
     net = nx.DiGraph()
-    for vertex, label in graph.labels.items():
+    for vertex, label in labels.items():
         net.add_node(label, group=vertex.type.value)
-    for src, dest, weight in graph.edges:
-        if weighted:
-            net.add_edge(
-                graph.labels[src],
-                graph.labels[dest],
-                title=f"{weight:.2f}",
-                arrows="to",
-            )
-        else:
-            net.add_edge(graph.labels[src], graph.labels[dest], arrows="to")
+    for src in graph.vertices:
+        for dest, weight in graph.out_neighbors(src).items():
+            if weighted:
+                net.add_edge(
+                    labels[src],
+                    labels[dest],
+                    title=f"{weight:.2f}",
+                    arrows="to",
+                )
+            else:
+                net.add_edge(graph.labels[src], graph.labels[dest], arrows="to")
     return net
