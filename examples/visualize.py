@@ -9,5 +9,5 @@ vertex3 = graph1.add_user("2")
 graph1.add_edge(vertex1, vertex2, 3.0)
 graph1.add_edge(vertex2, vertex3, 2.0)
 labels = {vertex1: "Japanese Food", vertex2: "Ramen Image", vertex3: "Zozo"}
-
+path = [vertex1, vertex2]
 visualize(graph1, labels, Path("types_graph.html"), path=path)
