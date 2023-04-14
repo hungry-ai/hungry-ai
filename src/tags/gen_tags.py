@@ -22,8 +22,8 @@ def generate_tags(word_embedding: WordEmbedding, graph: Graph) -> None:
 if __name__ == "__main__":
     import argparse
     from pathlib import Path
-    from ..graph.txt_graph import TXTGraph, get_recommendations
-    from ..graph.visualize import visualize
+    from ..graph import CSVGraph, get_recommendations
+    from ..graph import visualize
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=".")

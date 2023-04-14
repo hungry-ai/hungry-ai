@@ -46,6 +46,12 @@ class Graph(metaclass=ABCMeta):
     def add_edge(
         self, src: Vertex, dest: Vertex, weight: float = 1.0, directed: bool = True
     ) -> None:
+        if src not in self.vertices:
+            raise KeyError(f"{src=} not in self.vertices")
+
+        if dest not in self.vertices:
+            raise KeyError(f"{dest=} not in self.vertices")
+
         self.add_directed_edge(src, dest, weight=weight)
 
         if not directed:
