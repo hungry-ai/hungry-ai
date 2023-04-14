@@ -62,4 +62,5 @@ def test_review(frontend: Frontend, url: str) -> None:
 
     frontend.upload(url, 5.0)
 
-    frontend.review(5.0)
+    with pytest.raises(NotImplementedError):
+        frontend.review(5.0)

@@ -2,6 +2,7 @@ import datetime
 from pathlib import Path
 
 import pytest
+
 from src.backend import Backend
 from src.db import (
     EdgeDB,
@@ -11,18 +12,19 @@ from src.db import (
     RecommendationDB,
     Review,
     ReviewDB,
-    Topic,
-    TopicDB,
+    Tag,
+    TagDB,
     User,
     UserDB,
 )
 from src.frontend import Frontend
-from src.graph import GraphService
+from src.graph import GraphService, LocalGraph
 from src.images import ImageService
 from src.recommender import RecommenderService
 from src.reviews import ReviewService
-from src.topics import TopicService
+from src.tags import TagService
 from src.users import UserService, hash
+
 
 # DBs
 
@@ -33,8 +35,12 @@ def root(tmp_path_factory: pytest.TempPathFactory) -> Path:
 
 
 @pytest.fixture(scope="function")
-def frontend(root: Path) -> Frontend:
-    backend = Backend(root)
+def backend(root: Path) -> Backend:
+    return Backend(root)
+
+
+@pytest.fixture(scope="function")
+def frontend(backend: Backend) -> Frontend:
     return Frontend(backend)
 
 
@@ -44,8 +50,8 @@ def image_db(root: Path) -> ImageDB:
 
 
 @pytest.fixture(scope="function")
-def topic_db(root: Path) -> TopicDB:
-    return TopicDB(root / "topics.csv")
+def tag_db(root: Path) -> TagDB:
+    return TagDB(root / "tags.csv")
 
 
 @pytest.fixture(scope="function")
@@ -72,34 +78,46 @@ def recommendation_db(root: Path) -> RecommendationDB:
 
 
 @pytest.fixture(scope="function")
-def graph_service(edge_db: EdgeDB) -> GraphService:
-    return GraphService(edge_db)
+def graph_service() -> GraphService:
+    graph = LocalGraph()
+
+    graph.add_tag("t1")
+    graph.add_tag("t2")
+    graph.add_tag("t3")
+
+    return GraphService(graph)
 
 
 @pytest.fixture(scope="function")
-def topic_service(topic_db: TopicDB) -> TopicService:
-    topic_db.insert(Topic("t1", "hello world"))
-    topic_db.insert(Topic("t2", "hi"))
+def tag_service(tag_db: TagDB) -> TagService:
+    tag_db.insert(Tag("t1", "hello world"))
+    tag_db.insert(Tag("t2", "hi"))
 
-    return TopicService(topic_db)
+    return TagService(tag_db)
 
 
 @pytest.fixture(scope="function")
 def image_service(
-    image_db: ImageDB, topic_service: TopicService, graph_service: GraphService
+    image_db: ImageDB, tag_service: TagService, graph_service: GraphService
 ) -> ImageService:
-    return ImageService(image_db, topic_service, graph_service)
+    return ImageService(image_db, tag_service, graph_service)
 
 
 @pytest.fixture(scope="function")
-def user_service(user_db: UserDB) -> UserService:
+def user_service(user_db: UserDB, graph_service: GraphService) -> UserService:
     user_db.insert(User("u1", "a@gmail.com", hash("a")))
+    graph_service.add_user("u1")
 
-    return UserService(user_db)
+    return UserService(user_db, graph_service)
 
 
 @pytest.fixture(scope="function")
 def review_service(review_db: ReviewDB, graph_service: GraphService) -> ReviewService:
+    graph_service.add_user("u1")
+
+    graph_service.add_image("i1")
+    graph_service.add_image("i2")
+
     graph_service.add_image_edge("i1", "t1", 0.8)
     graph_service.add_image_edge("i2", "t1", 0.8)
     graph_service.add_image_edge("i2", "t2", 0.5)
@@ -110,19 +128,23 @@ def review_service(review_db: ReviewDB, graph_service: GraphService) -> ReviewSe
 @pytest.fixture(scope="function")
 def recommender_service(
     recommendation_db: RecommendationDB,
-    review_service: ReviewService,
+    graph_service: GraphService,
 ) -> RecommenderService:
-    graph_service = review_service.graph_service
+    graph_service.add_image("i1")
+    graph_service.add_image("i2")
 
     graph_service.add_image_edge("i1", "t1", 0.5)
     graph_service.add_image_edge("i1", "t2", 0.5)
     graph_service.add_image_edge("i2", "t1", 0.5)
 
+    graph_service.add_user("u1")
+    graph_service.add_user("u2")
+
     graph_service.add_user_edge("u1", "i1", 5.0)
     graph_service.add_user_edge("u2", "i1", 5.0)
     graph_service.add_user_edge("u2", "i2", 1.0)
 
-    return RecommenderService(recommendation_db, review_service)
+    return RecommenderService(recommendation_db, graph_service)
 
 
 # random
