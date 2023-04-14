@@ -17,13 +17,13 @@ class LocalGraph(Graph):
         self._out_neighbors[vertex] = dict()
         self._in_neighbors[vertex] = dict()
 
-    def add_directed_edge(self, src: Vertex, dest: Vertex, weight: float = 1.0) -> None:
-        self._out_neighbors[src][dest] = weight
-        self._in_neighbors[dest][src] = weight
-
     @property
     def vertices(self) -> set[Vertex]:
         return self._vertices
+
+    def add_directed_edge(self, src: Vertex, dest: Vertex, weight: float = 1.0) -> None:
+        self._out_neighbors[src][dest] = weight
+        self._in_neighbors[dest][src] = weight
 
     def out_neighbors(self, vertex: Vertex) -> dict[Vertex, float]:
         return self._out_neighbors[vertex]

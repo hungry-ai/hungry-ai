@@ -22,18 +22,6 @@ class Graph(metaclass=ABCMeta):
         self.add_vertex(vertex)
         return vertex
 
-    @abstractmethod
-    def add_directed_edge(self, src: Vertex, dest: Vertex, weight: float = 1.0) -> None:
-        raise NotImplementedError
-
-    def add_edge(
-        self, src: Vertex, dest: Vertex, weight: float = 1.0, directed: bool = True
-    ) -> None:
-        self.add_directed_edge(src, dest, weight=weight)
-
-        if not directed:
-            self.add_directed_edge(dest, src, weight=weight)
-
     @property
     @abstractmethod
     def vertices(self) -> set[Vertex]:
@@ -50,6 +38,18 @@ class Graph(metaclass=ABCMeta):
     @property
     def images(self) -> set[Vertex]:
         return {vertex for vertex in self.vertices if vertex.type == VertexType.IMAGE}
+
+    @abstractmethod
+    def add_directed_edge(self, src: Vertex, dest: Vertex, weight: float = 1.0) -> None:
+        raise NotImplementedError
+
+    def add_edge(
+        self, src: Vertex, dest: Vertex, weight: float = 1.0, directed: bool = True
+    ) -> None:
+        self.add_directed_edge(src, dest, weight=weight)
+
+        if not directed:
+            self.add_directed_edge(dest, src, weight=weight)
 
     @abstractmethod
     def out_neighbors(self, vertex: Vertex) -> dict[Vertex, float]:

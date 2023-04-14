@@ -27,3 +27,7 @@ class PrMatch:
 # if __name__ == '__main__':
 #    pr_match = PrMatch()
 #    pr_match(r"https://i.imgur.com/2EUmDJO.jpg", ['sm'])
+
+
+def pr_match(url: str, tag: str) -> float:
+    return 0.5

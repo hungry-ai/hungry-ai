@@ -21,7 +21,16 @@ def to_pandas_dtype(py_type: type) -> str:
     if str_py_type in ("str", "int", "float"):
         return str_py_type
     elif str_py_type == "datetime":
-        return "datetime64[ns]"
+        return "str"
+    raise NotImplementedError
+
+
+def from_str(value: str, py_type: type) -> Any:
+    str_py_type = py_type.__name__
+    if str_py_type in ("str", "int", "float"):
+        return py_type(value)
+    elif str_py_type == "datetime":
+        return pd.to_datetime(value).to_pydatetime()
     raise NotImplementedError
 
 
@@ -42,13 +51,13 @@ class DB(Generic[RowT]):
                 {
                     colname: pd.Series(dtype=to_pandas_dtype(coltype))
                     for colname, coltype in self.columns
-                }
+                },
             )
         return pd.read_csv(self.path)
 
     def select(self, **where: Any) -> list[RowT]:
         return [
-            self.cls(*[row[k] for k, _ in self.columns])
+            self.cls(*[from_str(row[k], t) for k, t in self.columns])
             for _, row in self.df.iterrows()
             if all([row[k] == v for k, v in where.items()])
         ]

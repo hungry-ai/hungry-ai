@@ -7,7 +7,7 @@ def test_add_review(review_service: ReviewService) -> None:
     review_service.add_review("u1", "i1", 5)
     review_service.add_review("u1", "i2", 5)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         review_service.add_review("u2", "i3", 5)
 
 

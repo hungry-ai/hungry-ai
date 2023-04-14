@@ -1,4 +1,6 @@
 from .db import (
+    DBSchema,
+    DB,
     User,
     UserDB,
     Image,

@@ -15,8 +15,11 @@ class RecommenderService:
 
         self.rated: set[str] = set()
 
+    def predict_ratings(self, user_id: str) -> dict[str, float]:
+        raise NotImplementedError
+
     def recommend(self, user_id: str) -> None | str:
-        ratings = self.graph_service.predict_ratings(user_id)
+        ratings = self.predict_ratings(user_id)
         if len(self.rated) == len(ratings):
             self.rated.clear()
 
@@ -32,6 +35,10 @@ class RecommenderService:
 
 # TODO: incorporate this
 
+
+"""
+def predict_ratings(self, user_id: str) -> dict[str, float]:  # TODO
+    return {vertex.id: 2.5 for vertex in self.graph.images}
 
 def get_recommendations(
     graph: GraphService, username: str, number_of_recommendations: int
@@ -63,3 +70,4 @@ def get_recommendations(
                 heapq.heappush(priority_queue, (distance, neighbor, current_vertex))
 
     return (recommended_images, distances)
+"""

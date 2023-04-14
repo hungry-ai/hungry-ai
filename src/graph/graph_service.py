@@ -1,6 +1,7 @@
 import datetime
 
 import numpy as np
+import warnings
 
 from .vertex import Vertex, VertexType
 from .graph import Graph
@@ -10,11 +11,17 @@ class GraphService:
     def __init__(self, graph: Graph) -> None:
         self.graph = graph
 
-    def add_user(self, user_id: str) -> None:
-        self.graph.add_user(user_id)
-
     def add_image(self, image_id: str) -> None:
+        if Vertex(image_id, VertexType.IMAGE) in self.graph.vertices:
+            warnings.warn(f"{image_id=} already exists in the graph")
+
         self.graph.add_image(image_id)
+
+    def add_user(self, user_id: str) -> None:
+        if Vertex(user_id, VertexType.USER) in self.graph.vertices:
+            warnings.warn(f"{user_id=} already exists in the graph")
+
+        self.graph.add_user(user_id)
 
     def add_image_edge(self, image_id: str, tag_id: str, p: float) -> None:
         if p < 0.0 or p > 1.0:
@@ -40,13 +47,13 @@ class GraphService:
 
         from_vtx = Vertex(user_id, VertexType.USER)
         if from_vtx not in self.graph.vertices:
-            raise ValueError(
+            raise KeyError(
                 f"unknown {user_id=}, available: {[vertex.id for vertex in self.graph.users]}"
             )
 
         to_vtx = Vertex(image_id, VertexType.IMAGE)
         if to_vtx not in self.graph.vertices:
-            raise ValueError(
+            raise KeyError(
                 f"unknown {image_id=}, available: {[vertex.id for vertex in self.graph.images]}"
             )
 
@@ -54,6 +61,3 @@ class GraphService:
             raise NotImplementedError("TODO: support multiple user->image edges")
 
         self.graph.add_edge(from_vtx, to_vtx, weight=rating)
-
-    def predict_ratings(self, user_id: str) -> dict[str, float]:  # TODO
-        return {vertex.id: 2.5 for vertex in self.graph.images}

@@ -35,8 +35,12 @@ def root(tmp_path_factory: pytest.TempPathFactory) -> Path:
 
 
 @pytest.fixture(scope="function")
-def frontend(root: Path) -> Frontend:
-    backend = Backend(root)
+def backend(root: Path) -> Backend:
+    return Backend(root)
+
+
+@pytest.fixture(scope="function")
+def frontend(backend: Backend) -> Frontend:
     return Frontend(backend)
 
 

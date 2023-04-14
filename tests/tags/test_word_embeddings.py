@@ -22,3 +22,7 @@ def test_word_embedding():
     np.testing.assert_array_equal(word_vector, np.array([0, 0, 0, 1, 0]))
     with pytest.raises(KeyError):
         word_embedding_1["Wassup"]
+
+
+def test_pytorch_word_embedding() -> None:
+    assert False
