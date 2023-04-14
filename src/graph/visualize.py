@@ -1,12 +1,14 @@
+from pathlib import Path
 import networkx as nx  # type: ignore[import]
 from pyvis.network import Network  # type: ignore[import]
-from .graph import Graph
+from .graph import Graph, Vertex
+
 
 
 def visualize(
     graph: Graph,
-    labels: dict,
-    file_name: str = "src/graph/visualize.html",
+    labels: dict[Vertex,str],
+    file_name: Path = Path("src/graph/visualize.html"),
     weighted: bool = True,
     scaled: bool = True,
 ) -> None:
@@ -34,7 +36,7 @@ def visualize(
     visual_net.show(file_name)
     print("Graph outputted to file: " + file_name)
 
-def build_net(graph: Graph, labels: dict, weighted: bool) -> nx.DiGraph:
+def build_net(graph: Graph, labels: dict[Vertex,str], weighted: bool) -> nx.DiGraph:
     net = nx.DiGraph()
     for vertex, label in labels.items():
         net.add_node(label, group=vertex.type.value)
