@@ -73,8 +73,7 @@ class DB(Generic[RowT]):
 @dataclass
 class User(DBSchema):
     user_id: str
-    email: str
-    password_hash: str
+    instagram_username: str
 
 
 class UserDB(DB[User]):

@@ -105,7 +105,7 @@ def image_service(
 
 @pytest.fixture(scope="function")
 def user_service(user_db: UserDB, graph_service: GraphService) -> UserService:
-    user_db.insert(User("u1", "a@gmail.com", hash("a")))
+    user_db.insert(User("u1", "u1_inst"))
     graph_service.add_user("u1")
 
     return UserService(user_db, graph_service)

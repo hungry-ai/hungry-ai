@@ -4,133 +4,83 @@ from .backend import Backend
 from .db import Image, User
 
 
-def signed_in(func):
-    def wrapper(self, *args):
-        if self.user is None:
-            return "You're not signed in"
-        return func(self, *args)
-
-    return wrapper
-
-
-def signed_out(func):
-    def wrapper(self, *args):
-        if self.user is not None:
-            return "You're already signed in"
-        return func(self, *args)
-
-    return wrapper
-
-
-def recommends(func):
-    def wrapper(self, *args):
-        resp = func(self, *args)
-        return resp or self._recommend()
-
-    return wrapper
-
-
 class Frontend:
     def __init__(self, backend: Backend = Backend()) -> None:
         self.backend = backend
-        self.user: None | User = None
-        self.current_image: None | Image = None
 
-    @signed_out
-    def sign_up(self, email: str, password: str) -> None | str:
-        try:
-            self.backend.user_service.sign_up(email, password)
-        except ValueError as e:
-            return str(e)
+    def story_mention(self, instagram_username: str, url: str, rating: int) -> str:
+        if rating < 1 or rating > 5:
+            raise ValueError("Invalid rating")
 
-        return None
-
-    @signed_out
-    @recommends
-    def sign_in(self, email: str, password: str) -> None | str:
-        try:
-            self.user = self.backend.user_service.sign_in(email, password)
-        except ValueError as e:
-            return str(e)
-
-        return None
-
-    @signed_in
-    def sign_out(self) -> None | str:
-        self.user = None
-
-        return None
-
-    @signed_in
-    @recommends
-    def upload(self, url: str, rating: int) -> None | str:
-        user_id = self.user.user_id  # type: ignore[union-attr]
+        user_id = self.backend.user_service.get_user_id(
+            instagram_username, raise_if_empty=False
+        )
         image_id = self.backend.image_service.add_image(url)
+        self.backend.review_service.add_review(user_id, image_id, rating)
+
+        return "review added"
+
+    def search(self, query: str, location: str, instagram_username: str) -> str:
+        if query != "":
+            return "queries not supported yet"
+
+        if location != "":
+            return "locations not supported yet"
+
         try:
-            self.backend.review_service.add_review(user_id, image_id, rating)
-        except ValueError as e:
+            user_id = self.backend.user_service.get_user_id(instagram_username)
+        except KeyError as e:
             return str(e)
 
-        return None
+        output = []
 
-    @signed_in
-    @recommends
-    def review(self, rating: int) -> None | str:
-        if self.current_image is None:
-            return "No image to review"
+        recommendations = self.backend.recommender_service.get_recommendations(
+            user_id, 20
+        )
+        recommended_image_urls = [
+            self.backend.image_service.get_image(image_id).url
+            for image_id in recommendations
+        ]
+        output.append("Recommended images:")
+        output.extend([f"\t{url}" for url in recommended_image_urls])
 
-        user_id = self.user.user_id  # type: ignore[union-attr]
-        image_id = self.current_image.image_id
-        try:
-            self.backend.review_service.add_review(user_id, image_id, rating)
-        except ValueError as e:
-            return str(e)
+        reviews = self.backend.review_service.get_reviews(user_id)
+        output.append("My reviews:")
+        for review in reviews:
+            image = self.backend.image_service.get_image(review.image_id)
+            output.append(f"\t{review.rating} - {image.url}")
 
-        return None
+        output.append("My stats:")
+        output.append("No stats available.")
 
-    @signed_in
-    def _recommend(self) -> None | str:
-        assert self.user is not None
-        user_id = self.user.user_id
-        image_id = self.backend.recommender_service.recommend(user_id)
-        if image_id is None:
-            return "No images to review - try uploading one"
-        self.current_image = self.backend.image_service.get_image(image_id)
-        if self.current_image is None:
-            return "Error: could not find image"
-        return f"Please rate the following image: {self.current_image.url}"
+        return "\n".join(output)
 
 
 def main() -> None:
     frontend = Frontend()
 
-    instructions = "Commands:\n- sign_up <email> <password>\n- sign_in <email> <password>\n- sign_out\n- upload <url> <rating>\n- review <rating>"
+    instructions = "Commands:\n- story_mention <instagram_username> <image_url> <rating>\n- search <query> <location> <instagram_username>"
     print(instructions)
 
     while True:
         req = input().split()
 
-        if req[0] == "sign_up" and len(req) == 3:
-            resp = frontend.sign_up(req[1], req[2])
-        elif req[0] == "sign_in" and len(req) == 3:
+        if req[0] == "story_mention" and len(req) == 3:
+            if len(req) != 3:
+                print(
+                    "Wrong number of arguments: story_mention <instagram_username> <image_url> <rating>"
+                )
+            resp = frontend.story_mention(req[1], req[2])
+        elif req[0] == "search" and len(req) == 3:
+            if len(req) != 3:
+                print(
+                    "Wrong number of arguments: search <query> <location> <instagram_username>"
+                )
             resp = frontend.sign_in(req[1], req[2])
-        elif req[0] == "sign_out" and len(req) == 1:
-            resp = frontend.sign_out()
-        elif req[0] == "upload" and len(req) == 3:
-            if not (req[2].isdigit() and 1 <= int(req[2]) <= 5):
-                print("Invalid rating")
-                continue
-            resp = frontend.upload(req[1], int(req[2]))
-        elif req[0] == "review" and len(req) == 2:
-            if not (req[1].isdigit() and 1 <= int(req[1]) <= 5):
-                print("Invalid rating")
-                continue
-            resp = frontend.review(int(req[1]))
         else:
             print("Unrecognized command")
 
-        if resp is not None:
-            print(resp)
+        print(resp)
 
 
 if __name__ == "__main__":

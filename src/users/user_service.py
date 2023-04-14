@@ -1,5 +1,6 @@
 from hashlib import sha256
 from uuid import uuid4
+import warnings
 
 from ..db import User, UserDB
 from ..graph import GraphService
@@ -14,28 +15,21 @@ class UserService:
         self.user_db = user_db
         self.graph_service = graph_service
 
-    def sign_up(self, email: str, password: str) -> None:
-        users = self.user_db.select(email=email)
+    def get_user_id(self, instagram_username: str, raise_if_empty: bool = True) -> str:
+        results = self.user_db.select(instagram_username=instagram_username)
 
-        if len(users) > 0:
-            raise ValueError("user with this email already exists")
+        if len(results) == 0:
+            if raise_if_empty:
+                raise KeyError(f"user with {instagram_username=} does not exist")
 
-        user_id = str(uuid4())
-        password_hash = hash(password)
-        user = User(user_id, email, password_hash)
-        self.user_db.insert(user)
-        self.graph_service.add_user(user_id)
+            user_id = str(uuid4())
+            user = User(user_id, instagram_username)
+            self.user_db.insert(user)
+            self.graph_service.add_user(user_id)
+            return user_id
 
-    def sign_in(self, email: str, password: str) -> User:
-        users = self.user_db.select(email=email)
+        if len(results) > 1:
+            warnings.warn("multiple users with that instagram_username")
 
-        if len(users) == 0:
-            raise ValueError("no user with this email")
-
-        assert len(users) == 1
-        user = users[0]
-
-        if user.password_hash != hash(password):
-            raise ValueError("incorrect password")
-
-        return user
+        user_id = results[0].user_id
+        return user_id

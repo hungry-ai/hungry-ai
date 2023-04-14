@@ -3,20 +3,10 @@ from src.db import User
 from src.users import UserService
 
 
-def test_sign_up(user_service: UserService) -> None:
-    with pytest.raises(ValueError):
-        user_service.sign_up("a@gmail.com", "a")
+def test_get_user_id(user_service: UserService) -> None:
+    with pytest.raises(KeyError):
+        user_service.get_user_id("cody")
 
-    user_service.sign_up("b@gmail.com", "b")
+    user_id = user_service.get_user_id("cody", raise_if_empty=False)
 
-
-def test_sign_in(user_service: UserService) -> None:
-    with pytest.raises(ValueError):
-        user_service.sign_in("a@gmail.com", "b")
-
-    with pytest.raises(ValueError):
-        user_service.sign_in("c@gmail.com", "c")
-
-    user = user_service.sign_in("a@gmail.com", "a")
-    assert isinstance(user, User)
-    assert user.email == "a@gmail.com"
+    assert user_service.get_user_id("cody") == user_id
