@@ -36,7 +36,7 @@ class GraphService:
                 f"unknown {tag_id=}, available: {[vertex.id for vertex in self.graph.tags]}"
             )
 
-        self.graph.add_edge(from_vtx, to_vtx, p)
+        self.graph.add_edge(from_vtx, to_vtx, weight=p, directed=False)
 
     def add_user_edge(self, user_id: str, image_id: str, rating: float) -> None:
         if rating < 1.0 or rating > 5.0:
@@ -57,4 +57,4 @@ class GraphService:
         if to_vtx in self.graph.out_neighbors(from_vtx):
             raise NotImplementedError("TODO: support multiple user->image edges")
 
-        self.graph.add_edge(from_vtx, to_vtx, weight=rating)
+        self.graph.add_edge(from_vtx, to_vtx, weight=rating, directed=False)

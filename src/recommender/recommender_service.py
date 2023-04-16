@@ -24,29 +24,31 @@ class RecommenderService:
     ) -> list[str]:
         # dijkstra
         src = Vertex(user_id, VertexType.USER)
+        if src not in self.graph.vertices:
+            return []
 
-        distances: dict[Vertex, tuple[float, Vertex | None]] = dict()
-        for vertex in self.graph.vertices:
-            distances[vertex] = (float("infinity"), None)
+        recommendations = []
+        distance = {src: 0.0}
+        processed = set()
 
-        distances[src] = (0.0, None)
-        priority_queue: list[tuple[float, Vertex, Vertex | None]] = [(0.0, src, None)]
-        recommended_images = []
+        priority_queue = []
+        heapq.heappush(priority_queue, (distance[src], src.id, src.type, src))
 
-        while priority_queue:
-            current_distance, current_vertex, previous = heapq.heappop(priority_queue)
-
-            if current_distance > distances[current_vertex][0]:
+        while len(priority_queue) and len(recommendations) < number_of_recommendations:
+            _, _, _, current_vertex = heapq.heappop(priority_queue)
+            if current_vertex in processed:
                 continue
-
-            if current_vertex.type == VertexType.IMAGE:
-                recommended_images.append(current_vertex.id)
-
+            processed.add(current_vertex)
             for neighbor, weight in self.graph.out_neighbors(current_vertex).items():
-                distance = current_distance + weight
-
-                if distance < distances[neighbor][0]:
-                    distances[neighbor] = (distance, current_vertex)
-                    heapq.heappush(priority_queue, (distance, neighbor, current_vertex))
-
-        return recommended_images
+                if (
+                    neighbor not in distance
+                    or distance[current_vertex] + weight < distance[neighbor]
+                ):
+                    distance[neighbor] = distance[current_vertex] + weight
+                    heapq.heappush(
+                        priority_queue,
+                        (-distance[neighbor], neighbor.id, neighbor.type, neighbor),
+                    )
+            if current_vertex.type == VertexType.IMAGE:
+                recommendations.append(current_vertex.id)
+        return recommendations
