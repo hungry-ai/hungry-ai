@@ -25,11 +25,7 @@ def test_word_embedding() -> None:
 
 
 def test_pytorch_word_embedding() -> None:
-    words = [
-        # fmt: off
-        "beef", "turkey", "broccoli", "salmon", "tuna", "barbecue"
-        # fmt: on
-    ]
+    words = ["beef", "turkey", "broccoli", "salmon", "tuna", "barbecue"]
     
     word_embedding_1 = PytorchWordEmbedding(words, dimension = 50)
     assert(50 == word_embedding_1.dimension)
