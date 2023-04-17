@@ -1,8 +1,7 @@
-from ..graph import Graph
+from ..graph import Graph, Vertex
 from .word_embeddings import PytorchWordEmbedding, WordEmbedding
 
-
-def generate_tags(word_embedding: WordEmbedding, graph: Graph) -> None:
+def generate_tags_graph(word_embedding: WordEmbedding, graph: Graph) -> dict[str, Vertex]:
     vertices = {word: graph.add_tag(word) for word in word_embedding}
 
     if len(word_embedding) <= 1:
@@ -17,7 +16,8 @@ def generate_tags(word_embedding: WordEmbedding, graph: Graph) -> None:
         distance = word_embedding.distance(word, nearest_neighbor)
 
         graph.add_edge(vertex, vertices[nearest_neighbor], distance)
-
+    
+    return vertices
 
 if __name__ == "__main__":
     import argparse

@@ -1,10 +1,10 @@
 import numpy as np
 import pytest
 
-from src.tags import WordEmbedding
+from src.tags import WordEmbedding, PytorchWordEmbedding
 
 
-def test_word_embedding():
+def test_word_embedding() -> None:
     word_embedding_1 = WordEmbedding(dimension=5)
     assert 5 == word_embedding_1.dimension
     assert 0 == len(word_embedding_1)
@@ -25,4 +25,18 @@ def test_word_embedding():
 
 
 def test_pytorch_word_embedding() -> None:
-    assert False
+    words = ["beef", "turkey", "broccoli", "salmon", "tuna", "barbecue"]
+    
+    word_embedding_1 = PytorchWordEmbedding(words, dimension = 50)
+    assert(50 == word_embedding_1.dimension)
+    
+    assert(50 == len(word_embedding_1["beef"]))
+    assert(50 == len(word_embedding_1["turkey"]))
+    assert(50 == len(word_embedding_1["broccoli"]))
+    assert(50 == len(word_embedding_1["salmon"]))
+    assert(50 == len(word_embedding_1["tuna"]))
+    assert(50 == len(word_embedding_1["barbecue"]))
+    
+    with pytest.raises(KeyError):
+        word_embedding_1["Wassup"]
+
