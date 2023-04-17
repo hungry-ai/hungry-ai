@@ -1,7 +1,5 @@
-from ..graph import Graph
+from ..graph import Graph, Vertex
 from .word_embeddings import PytorchWordEmbedding, WordEmbedding
-from src.graph.vertex import Vertex
-
 
 def generate_tags_graph(word_embedding: WordEmbedding, graph: Graph) -> dict[str, Vertex]:
     vertices = {word: graph.add_tag(word) for word in word_embedding}

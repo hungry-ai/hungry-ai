@@ -1,7 +1,7 @@
 import numpy as np
 
 from src.graph import LocalGraph
-from src.tags.gen_tags import WordEmbedding, generate_tags_graph
+from src.tags import WordEmbedding, generate_tags_graph
 
 
 def test_generate_tags_graph():
