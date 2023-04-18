@@ -9,7 +9,7 @@ from sklearn.model_selection import train_test_split
 from .recommender import Recommender
 
 
-def reviews_dataset() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def reviews_dataset() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     data = Path("../data")
     yelp_dataset = data / "yelp_dataset"
     if not yelp_dataset.exists():
@@ -31,10 +31,13 @@ def reviews_dataset() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         images.to_csv(reviews / "images.csv", index=None)
 
     logging.info("Reading reviews")
-    if (reviews / "reviews_train.csv").exists() and (
-        reviews / "reviews_test.csv"
-    ).exists():
+    if (
+        (reviews / "reviews_train.csv").exists()
+        and (reviews / "reviews_validation.csv").exists()
+        and (reviews / "reviews_test.csv").exists()
+    ):
         reviews_train = pd.read_csv(reviews / "reviews_train.csv")
+        reviews_validation = pd.read_csv(reviews / "reviews_validation.csv")
         reviews_test = pd.read_csv(reviews / "reviews_test.csv")
     else:
         reviews_data = {"user_id": [], "image_id": [], "rating": []}
@@ -45,11 +48,17 @@ def reviews_dataset() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
                 reviews_data["image_id"].append(line.get("business_id", None))
                 reviews_data["rating"].append(line.get("stars", None))
         reviews_df = pd.DataFrame(reviews_data)
-        reviews_train, reviews_test = train_test_split(reviews_df, train_size=0.8)
+        reviews_train, reviews_test = train_test_split(
+            reviews_df, train_size=0.8, random_state=42069
+        )
+        reviews_validation, reviews_test = train_test_split(
+            reviews_test, train_size=0.5, random_state=42069
+        )
         reviews_train.to_csv(reviews / "reviews_train.csv", index=None)
+        reviews_test.to_csv(reviews / "reviews_validation.csv", index=None)
         reviews_test.to_csv(reviews / "reviews_test.csv", index=None)
 
-    return reviews_train, reviews_test, images
+    return reviews_train, reviews_validation, reviews_test, images
 
 
 def evaluate_predictions(
