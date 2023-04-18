@@ -1,7 +1,6 @@
-from pathlib import Path
-
 import networkx as nx  # type: ignore[import]
 from pyvis.network import Network  # type: ignore[import]
+from typing import Any
 
 from .graph import Graph, Vertex
 
@@ -9,15 +8,15 @@ from .graph import Graph, Vertex
 def visualize(
     graph: Graph,
     labels: dict[Vertex, str],
-    file_name: Path = Path("src/graph/visualize.html"),
+    file_name: str = "visualize.html",
     weighted: bool = True,
     scaled: bool = True,
-) -> None:
+) -> Any:
     """
     Converts graph into pyvis network object and outputs visualization as html.
     graph: Graph object
     """
-    if not file_name.name.endswith(".html"):
+    if not file_name.endswith(".html"):
         raise ValueError("file_name must end with .html")
 
     net = build_net(graph, labels, weighted)
@@ -32,10 +31,10 @@ def visualize(
     else:
         nx.set_node_attributes(net, "circle", "shape")
 
-    visual_net = Network(notebook=True)
+    visual_net = Network(notebook=True, cdn_resources="in_line")
     visual_net.from_nx(net)
-    visual_net.show(file_name)
     print("Graph outputted to file: " + str(file_name))
+    return visual_net.show(file_name)
 
 
 def build_net(graph: Graph, labels: dict[Vertex, str], weighted: bool) -> nx.DiGraph:
