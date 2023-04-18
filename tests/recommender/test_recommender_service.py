@@ -9,11 +9,7 @@ def test_predict_ratings(recommender_service: RecommenderService) -> None:
 
 
 def test_get_recommendations(recommender_service: RecommenderService) -> None:
-    recommendations_1 = recommender_service.get_recommendations("u1", 20)
-    recommendations_2 = recommender_service.get_recommendations("u2", 20)
-    recommendations_3 = recommender_service.get_recommendations("u3", 20)
-
-    for user_id in ["u1", "u2", "u3"]:
+    for user_id in ["cody", "alex", "younes"]:
         for num_recs in [0, 1, 2, 20]:
             recommendations = recommender_service.get_recommendations(user_id, num_recs)
             assert len(recommendations) <= num_recs
