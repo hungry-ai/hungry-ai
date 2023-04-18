@@ -1,27 +1,25 @@
+import json
+import logging
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd  # type: ignore[import]
+from pathlib import Path
+from sklearn.model_selection import train_test_split
 
 from .recommender import Recommender
 
 
-def train() -> None:  # TODO: figure out where to put this
-    import json
-    import logging
-    import pandas as pd
-    from pathlib import Path
-    from sklearn.model_selection import train_test_split
-
+def reviews_dataset() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     data = Path("../data")
     yelp_dataset = data / "yelp_dataset"
     if not yelp_dataset.exists():
-        raise FileNotFoundError(f"Could not find {yelp_dataset=}")
+        raise FileNotFoundError(f"could not find {yelp_dataset=}")
     reviews = data / "reviews"
     reviews.mkdir(exist_ok=True)
 
     logging.info("Reading images")
     if (reviews / "images.csv").exists():
-        images_df = pd.read_csv(reviews / "images.csv")
+        images = pd.read_csv(reviews / "images.csv")
     else:
         images_data = {"image_id": [], "tags": []}
         with open(yelp_dataset / "yelp_academic_dataset_business.json") as f:
@@ -29,8 +27,8 @@ def train() -> None:  # TODO: figure out where to put this
                 line = json.loads(line_raw)
                 images_data["image_id"].append(line.get("business_id", None))
                 images_data["tags"].append(line.get("categories", None))
-        images_df = pd.DataFrame(images_data)
-        images_df.to_csv(reviews / "images.csv", index=None)
+        images = pd.DataFrame(images_data)
+        images.to_csv(reviews / "images.csv", index=None)
 
     logging.info("Reading reviews")
     if (reviews / "reviews_train.csv").exists() and (
@@ -51,7 +49,7 @@ def train() -> None:  # TODO: figure out where to put this
         reviews_train.to_csv(reviews / "reviews_train.csv", index=None)
         reviews_test.to_csv(reviews / "reviews_test.csv", index=None)
 
-    raise NotImplementedError
+    return reviews_train, reviews_test, images
 
 
 def evaluate_predictions(
