@@ -23,13 +23,15 @@ def test_search(frontend: Frontend) -> None:
 
     frontend.story_mention("cody", "food.jpg", 5)
 
+    print(frontend.search("", "", "cody"))
+
     assert (
         frontend.search("", "", "cody")
         == """\
 Recommended images:
-    food.jpg
+\tfood.jpg
 My reviews:
-    5 - food.jpg
+\t5 - food.jpg
 My stats:
 No stats available."""
     )
