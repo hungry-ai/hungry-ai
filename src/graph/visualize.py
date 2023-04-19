@@ -4,13 +4,13 @@ from pyvis.network import Network  # type: ignore[import]
 from .graph import Graph, Vertex
 
 
-
 def visualize(
     graph: Graph,
-    labels: dict[Vertex,str],
+    labels: dict[Vertex,str] = None,
     file_name: Path = Path("src/graph/visualize.html"),
     weighted: bool = True,
     scaled: bool = True,
+    path: list[Vertex] = None
 ) -> None:
     """
     Converts graph into pyvis network object and outputs visualization as html.
@@ -18,8 +18,8 @@ def visualize(
     """
     if not file_name.endswith(".html"):
         raise ValueError("file_name must end with .html")
-
-    net = build_net(graph, labels, weighted)
+    
+    net = build_net(graph, labels, weighted, path)
     if scaled:
         in_dict = dict(net.in_degree)
         min_size = 5
@@ -36,16 +36,20 @@ def visualize(
     visual_net.show(file_name)
     print("Graph outputted to file: " + file_name)
 
-def build_net(graph: Graph, labels: dict[Vertex,str], weighted: bool) -> nx.DiGraph:
+def build_net(graph: Graph, labels: dict[Vertex,str],
+        weighted: bool, path: list[Vertex]) -> nx.DiGraph:
     net = nx.DiGraph()
     for vertex, label in labels.items():
-        net.add_node(label, group=vertex.type.value)
+        if path and vertex in set(path):
+            net.add_node(label, group=4)
+        else:
+            net.add_node(label, group=vertex.type.value)
     for src in graph.vertices:
         for dest, weight in graph.out_neighbors(src).items():
             if weighted:
                 net.add_edge(
-                    labels[src],
-                    labels[dest],
+                    labels.get(src, src.name),
+                    labels.get(dest, dest.name),
                     title=f"{weight:.2f}",
                     arrows="to",
                 )
