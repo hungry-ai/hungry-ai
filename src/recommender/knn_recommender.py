@@ -11,11 +11,11 @@ class KNNRecommender(Recommender):
     def predict_rating(self, user_id: str, image_id: str) -> float:
         return 2.5
 
-    def get_closest_images(self, user_id: str) -> (list[str], dict[Vertex, Vertex]):
-         # dijkstra
+    def get_closest_images(self, user_id: str) -> tuple[list[str], dict[Vertex, Vertex]]:
+        # dijkstra
         src = Vertex(user_id, VertexType.USER)
         if src not in self.graph.vertices:
-            return ([], dict())
+            return [], dict()
 
         recommendations = []
         distance = {src: 0.0}
