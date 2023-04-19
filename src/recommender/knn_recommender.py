@@ -7,18 +7,15 @@ from ..graph import Graph, Vertex, VertexType
 class KNNRecommender(Recommender):
     def __init__(self, graph: Graph) -> None:
         super().__init__(graph)
-        self.last_search_id = None
-        self.parents_dict = None
-        self.distance_dict = None
 
     def predict_rating(self, user_id: str, image_id: str) -> float:
         return 2.5
 
-    def get_recommendations(self, user_id: str, num_recs: int) -> list[str]:
-        # dijkstra
+    def get_closest_images(self, user_id: str) -> (list[str], dict[Vertex, Vertex]):
+         # dijkstra
         src = Vertex(user_id, VertexType.USER)
         if src not in self.graph.vertices:
-            return []
+            return ([], dict())
 
         recommendations = []
         distance = {src: 0.0}
@@ -27,7 +24,7 @@ class KNNRecommender(Recommender):
         priority_queue = []
         heapq.heappush(priority_queue, (distance[src], src.id, src.type, src, None))
 
-        while len(priority_queue) and len(recommendations) < num_recs:
+        while len(priority_queue):
             _, _, _, current_vertex, previous_vertex = heapq.heappop(priority_queue)
             if current_vertex in parent:
                 continue
@@ -45,8 +42,8 @@ class KNNRecommender(Recommender):
             if current_vertex.type == VertexType.IMAGE:
                 recommendations.append(current_vertex.id)
         
-        self.last_search_id = user_id
-        self.parents_dict = parent
-        self.distance_dict = distance
-        
-        return recommendations
+        return (recommendations, parent)
+
+    def get_recommendations(self, user_id: str, num_recs: int) -> list[str]:
+        closest_images, parent = self.get_closest_images(user_id)
+        return closest_images[:num_recs]
