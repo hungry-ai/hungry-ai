@@ -2,7 +2,6 @@
 import os
 from typing import List
 
-
 # Put your own token path here
 # Assumes the script runs from outside src !!!
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "hungryai-d6f8c9e2f0c9.json"

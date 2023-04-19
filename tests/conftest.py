@@ -1,30 +1,16 @@
-import datetime
 from pathlib import Path
 
 import pytest
 
 from src.backend import Backend
-from src.db import (
-    EdgeDB,
-    Image,
-    ImageDB,
-    Recommendation,
-    RecommendationDB,
-    Review,
-    ReviewDB,
-    Tag,
-    TagDB,
-    User,
-    UserDB,
-)
+from src.db import EdgeDB, ImageDB, RecommendationDB, ReviewDB, Tag, TagDB, User, UserDB
 from src.frontend import Frontend
 from src.graph import GraphService, LocalGraph
 from src.images import ImageService
-from src.recommender import RecommenderService
+from src.recommender import Recommender, KNNRecommender, RecommenderService
 from src.reviews import ReviewService
 from src.tags import TagService
-from src.users import UserService, hash
-
+from src.users import UserService
 
 # DBs
 
@@ -126,25 +112,34 @@ def review_service(review_db: ReviewDB, graph_service: GraphService) -> ReviewSe
 
 
 @pytest.fixture(scope="function")
-def recommender_service(
-    recommendation_db: RecommendationDB,
-    graph_service: GraphService,
-) -> RecommenderService:
-    graph_service.add_image("i1")
-    graph_service.add_image("i2")
+def recommender_service(recommendation_db: RecommendationDB) -> RecommenderService:
+    graph = LocalGraph()
 
-    graph_service.add_image_edge("i1", "t1", 0.5)
-    graph_service.add_image_edge("i1", "t2", 0.5)
-    graph_service.add_image_edge("i2", "t1", 0.5)
+    soup = graph.add_tag("soup")
+    ramen = graph.add_tag("ramen")
+    japanese = graph.add_tag("japanese")
 
-    graph_service.add_user("u1")
-    graph_service.add_user("u2")
+    graph.add_edge(ramen, soup)
+    graph.add_edge(ramen, japanese)
 
-    graph_service.add_user_edge("u1", "i1", 5.0)
-    graph_service.add_user_edge("u2", "i1", 5.0)
-    graph_service.add_user_edge("u2", "i2", 1.0)
+    tonkotsu = graph.add_image("tonkotsu")
+    chicken_noodle = graph.add_image("chicken_noodle")
 
-    return RecommenderService(recommendation_db, graph_service)
+    graph.add_edge(tonkotsu, soup, 1.0, directed=False)
+    graph.add_edge(tonkotsu, ramen, 1.0, directed=False)
+    graph.add_edge(tonkotsu, japanese, 1.0, directed=False)
+    graph.add_edge(chicken_noodle, soup, 1.0, directed=False)
+
+    cody = graph.add_user("cody")
+    alex = graph.add_user("alex")
+
+    graph.add_edge(cody, tonkotsu, 5.0, directed=False)
+    graph.add_edge(alex, tonkotsu, 5.0, directed=False)
+    graph.add_edge(alex, chicken_noodle, 1.0, directed=False)
+
+    recommender = KNNRecommender(graph)
+
+    return RecommenderService(recommendation_db, recommender)
 
 
 # random

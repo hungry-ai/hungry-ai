@@ -1,13 +1,8 @@
-from hashlib import sha256
-from uuid import uuid4
 import warnings
+from uuid import uuid4
 
 from ..db import User, UserDB
 from ..graph import GraphService
-
-
-def hash(x: str) -> str:
-    return sha256(x.encode("utf-8")).hexdigest()
 
 
 class UserService:

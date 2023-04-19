@@ -1,4 +1,5 @@
 from uuid import uuid4
+
 from ..db import Image, ImageDB
 from ..graph import GraphService
 from ..tags import TagService

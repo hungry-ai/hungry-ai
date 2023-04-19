@@ -1,16 +1,19 @@
 from pathlib import Path
 
-from .db import EdgeDB, ImageDB, RecommendationDB, ReviewDB, TagDB, UserDB
+from .db import ImageDB, RecommendationDB, ReviewDB, TagDB, UserDB
 from .graph import GraphService, LocalGraph
 from .images import ImageService
-from .recommender import RecommenderService
+from .recommender import RecommenderService, KNNRecommender
 from .reviews import ReviewService
 from .tags import TagService
 from .users import UserService
 
 
 class Backend:
-    def __init__(self, root: Path = Path(__file__).parent.parent / "data") -> None:
+    def __init__(
+        self,
+        root: Path = Path(__file__).parent.parent / "data",
+    ) -> None:
         root.mkdir(exist_ok=True)
 
         graph = LocalGraph()
@@ -31,6 +34,5 @@ class Backend:
         self.review_service = ReviewService(review_db, self.graph_service)
 
         recommendation_db = RecommendationDB(root / "recommendations.csv")
-        self.recommender_service = RecommenderService(
-            recommendation_db, self.graph_service
-        )
+        recommender = KNNRecommender(graph)
+        self.recommender_service = RecommenderService(recommendation_db, recommender)

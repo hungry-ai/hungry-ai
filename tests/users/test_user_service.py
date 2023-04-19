@@ -1,5 +1,5 @@
 import pytest
-from src.db import User
+
 from src.users import UserService
 
 
