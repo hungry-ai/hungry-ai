@@ -1,15 +1,23 @@
 from abc import ABCMeta, abstractmethod
-from ..graph import Graph
+
+from ..images import Image
+from ..reviews import Review
+from ..users import User
 
 
 class Recommender(metaclass=ABCMeta):
-    def __init__(self, graph: Graph) -> None:
-        self.graph = graph
-
     @abstractmethod
-    def predict_rating(self, user_id: str, image_id: str) -> float:
+    def add_user(self, user: User) -> None:
         raise NotImplementedError
 
     @abstractmethod
-    def get_recommendations(self, user_id: int, num_recs: int) -> list[str]:
+    def add_image(self, image: Image) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def add_review(self, review: Review) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_recommendations(self, user: User, num_recs: int) -> list[str]:
         raise NotImplementedError

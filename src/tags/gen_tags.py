@@ -1,11 +1,14 @@
 from ..graph import Graph, Vertex
 from .word_embeddings import PytorchWordEmbedding, WordEmbedding
 
-def generate_tags_graph(word_embedding: WordEmbedding, graph: Graph) -> dict[str, Vertex]:
+
+def generate_tags_graph(
+    word_embedding: WordEmbedding, graph: Graph
+) -> dict[str, Vertex]:
     vertices = {word: graph.add_tag(word) for word in word_embedding}
 
     if len(word_embedding) <= 1:
-        return
+        return {}
 
     for word, vertex in vertices.items():
         neighbors = [w for w in word_embedding if w != word]
@@ -16,15 +19,15 @@ def generate_tags_graph(word_embedding: WordEmbedding, graph: Graph) -> dict[str
         distance = word_embedding.distance(word, nearest_neighbor)
 
         graph.add_edge(vertex, vertices[nearest_neighbor], distance)
-    
+
     return vertices
+
 
 if __name__ == "__main__":
     import argparse
     from pathlib import Path
 
     from ..graph import CSVGraph, visualize
-    from ..recommender import RecommenderService
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=".")
@@ -62,7 +65,7 @@ if __name__ == "__main__":
     word_embedding = PytorchWordEmbedding(words, dimension=50)
 
     graph = CSVGraph(root=args.root)
-    generate_tags(word_embedding, graph)
+    # generate_tags(word_embedding, graph)
     print(len(graph.vertices))
 
     zozo = graph.add_user("Zozo")

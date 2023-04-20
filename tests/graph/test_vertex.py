@@ -14,8 +14,26 @@ def test_vertex_type() -> None:
 
 
 def test_vertex() -> None:
-    vertex = Vertex("u", VertexType.USER)
+    vertex = Vertex("my_user", VertexType.USER)
 
-    assert isinstance(vertex.id, str)
+    assert vertex.id == "my_user"
+    assert vertex.type == VertexType.USER
     assert isinstance(vertex.type, VertexType)
-    assert vertex.name == "user_u"
+    assert vertex.name == "user_my_user"
+    assert vertex.__dataclass_params__.frozen  # type: ignore
+
+    vertex = Vertex("my_image", VertexType.IMAGE)
+
+    assert vertex.id == "my_image"
+    assert vertex.type == VertexType.IMAGE
+    assert isinstance(vertex.type, VertexType)
+    assert vertex.name == "image_my_image"
+    assert vertex.__dataclass_params__.frozen  # type: ignore
+
+    vertex = Vertex("my_tag", VertexType.TAG)
+
+    assert vertex.id == "my_tag"
+    assert vertex.type == VertexType.TAG
+    assert isinstance(vertex.type, VertexType)
+    assert vertex.name == "tag_my_tag"
+    assert vertex.__dataclass_params__.frozen  # type: ignore
