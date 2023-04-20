@@ -11,11 +11,14 @@ class Frontend:
         if rating < 1 or rating > 5:
             raise ValueError("Invalid rating")
 
-        user_id = self.backend.user_service.get_user_id(
-            instagram_username, raise_if_empty=False
-        )
-        image_id = self.backend.image_service.add_image(url)
-        self.backend.review_service.add_review(user_id, image_id, rating)
+        try:
+            user = self.backend.get_user(instagram_username)
+        except KeyError:
+            user = self.backend.add_user(instagram_username)
+
+        image = self.backend.add_image(url)
+
+        self.backend.add_review(user, image, rating)
 
         return "review added"
 
@@ -27,27 +30,27 @@ class Frontend:
             return "locations not supported yet"
 
         try:
-            user_id = self.backend.user_service.get_user_id(instagram_username)
-        except KeyError as e:
-            return str(e)
+            user = self.backend.get_user(instagram_username)
+        except KeyError:
+            user = self.backend.add_user(instagram_username)
+
+        recommendations = self.backend.get_recommendations(user, 20)
+        recommended_image_urls = [image.url for image in recommendations]
 
         output = []
-
-        recommendations = self.backend.recommender_service.get_recommendations(
-            user_id, 20
-        )
-        recommended_image_urls = [
-            self.backend.image_service.get_image(image_id).url
-            for image_id in recommendations
-        ]
         output.append("Recommended images:")
-        output.extend([f"\t{url}" for url in recommended_image_urls])
+        if len(recommended_image_urls) == 0:
+            output.append("No recommendations available.")
+        else:
+            output.extend([f"\t{url}" for url in recommended_image_urls])
 
-        reviews = self.backend.review_service.get_reviews(user_id)
+        reviews = self.backend.get_reviews(user)
         output.append("My reviews:")
-        for review in reviews:
-            image = self.backend.image_service.get_image(review.image_id)
-            output.append(f"\t{review.rating} - {image.url}")
+        if len(reviews) == 0:
+            output.append("No reviews available.")
+        else:
+            for review in reviews:
+                output.append(f"\t{review.rating} - {review.image.url}")
 
         output.append("My stats:")
         output.append("No stats available.")

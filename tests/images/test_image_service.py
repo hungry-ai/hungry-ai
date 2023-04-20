@@ -1,19 +1,15 @@
 import pytest
 
-from src.db import Image
-from src.images import ImageService
+from src.images import Image, ImageService
 
 
-def test_add_image(image_service: ImageService, url: str) -> None:
-    image_service.add_image(url)
+def test_image_service(image_service: ImageService, url: str) -> None:
+    banana = image_service.add_image(url)
 
+    assert isinstance(banana, Image)
+    assert banana.url == url
 
-def test_get_image(image_service: ImageService, url: str) -> None:
-    image_id = image_service.add_image(url)
-    image = image_service.get_image(image_id)
+    assert image_service.get_image(banana.id) == banana
 
-    assert isinstance(image, Image)
-    assert image.image_id == image_id
-
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         image_service.get_image("bad_image_id")
