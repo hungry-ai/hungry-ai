@@ -1,14 +1,15 @@
-from pathlib import Path
+from typing import Any
+
 import networkx as nx  # type: ignore[import]
 from pyvis.network import Network  # type: ignore[import]
-from typing import Any
+
 from .graph import Graph, Vertex
 
 
 def visualize(
     graph: Graph,
-    labels: dict[Vertex,str] = None,
-    file_name: Path = Path("src/graph/visualize.html"),
+    labels: dict[Vertex, str] = {},
+    file_name: str = "visualize.html",
     weighted: bool = True,
     scaled: bool = True,
     path: set[Vertex] = None
@@ -21,7 +22,7 @@ def visualize(
         raise ValueError("file_name must end with .html")
     if labels is None:
         raise TypeError("Please pass a labels dict.")
-        
+
     net = build_net(graph, labels, weighted, path)
     if scaled:
         in_dict = dict(net.in_degree)
@@ -39,8 +40,9 @@ def visualize(
     print("Graph outputted to file: " + str(file_name))
     return visual_net.show(str(file_name))
 
-def build_net(graph: Graph, labels: dict[Vertex,str],
-        weighted: bool, path: set[Vertex]) -> nx.DiGraph:
+def build_net(
+    graph: Graph, labels: dict[Vertex, str], weighted: bool, path: set[Vertex]
+) -> nx.DiGraph:
     net = nx.DiGraph()
     for vertex, label in labels.items():
         if path and vertex in path:
@@ -57,7 +59,9 @@ def build_net(graph: Graph, labels: dict[Vertex,str],
                     arrows="to",
                 )
             else:
-                net.add_edge(graph.labels[src], graph.labels[dest], arrows="to")
+                net.add_edge(
+                    labels.get(src, src.name), labels.get(dest, dest.name), arrows="to"
+                )
     return net
 
 def build_path(parent: dict[Vertex, Vertex]) -> set[Vertex]:

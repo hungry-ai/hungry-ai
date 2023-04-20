@@ -7,7 +7,6 @@ from .visualize import visualize, build_path
 __all__ = [
     "CSVGraph",
     "Graph",
-    "GraphService",
     "LocalGraph",
     "Vertex",
     "VertexType",

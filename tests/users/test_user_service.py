@@ -1,12 +1,13 @@
 import pytest
 
-from src.users import UserService
+from src.users import User, UserService
 
 
-def test_get_user_id(user_service: UserService) -> None:
+def test_user_service(user_service: UserService) -> None:
     with pytest.raises(KeyError):
-        user_service.get_user_id("cody")
+        user_service.get_user("cody")
 
-    user_id = user_service.get_user_id("cody", raise_if_empty=False)
+    cody = user_service.add_user("cody")
+    assert isinstance(cody, User)
 
-    assert user_service.get_user_id("cody") == user_id
+    assert user_service.get_user("cody") == cody

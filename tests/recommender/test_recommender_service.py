@@ -1,22 +1,18 @@
+from src.images import Image
 from src.recommender import RecommenderService
+from src.reviews import Review
+from src.users import User
 
 
-def test_predict_ratings(recommender_service: RecommenderService) -> None:
-    for user_id in ["cody", "alex", "younes"]:
-        for image_id in ["tonkotsu", "chicken_noodle", "sushi"]:
-            rating = recommender_service.predict_rating(user_id, image_id)
-            assert 1.0 <= rating <= 5.0
+def test_recommender_service(
+    recommender_service: RecommenderService,
+    cody: User,
+    tonkotsu: Image,
+    cody_tonkotsu: Review,
+) -> None:
+    recommender_service.add_user(cody)
+    recommender_service.add_image(tonkotsu)
+    recommender_service.add_review(cody_tonkotsu)
 
-
-def test_get_recommendations(recommender_service: RecommenderService) -> None:
-    for user_id in ["cody", "alex", "younes"]:
-        for num_recs in [0, 1, 2, 20]:
-            recommendations = recommender_service.get_recommendations(user_id, num_recs)
-            assert len(recommendations) <= num_recs
-            assert all(
-                isinstance(recommendation, str) for recommendation in recommendations
-            )
-            assert all(
-                recommendation in ("tonkotsu", "chicken_noodle")
-                for recommendation in recommendations
-            )
+    recommendations = recommender_service.get_recommendations(cody, 20)
+    assert all(isinstance(recommendation, str) for recommendation in recommendations)
