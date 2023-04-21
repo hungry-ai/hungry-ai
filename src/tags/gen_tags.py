@@ -26,12 +26,7 @@ def generate_tags_graph(
 if __name__ == "__main__":
     import argparse
     from pathlib import Path
-
-    from ..graph import CSVGraph, visualize
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--root", type=Path, default=".")
-    args = parser.parse_args()
+    from ..graph import LocalGraph, visualize
 
     words = [
         # fmt: off
@@ -64,8 +59,11 @@ if __name__ == "__main__":
 
     word_embedding = PytorchWordEmbedding(words, dimension=50)
 
-    graph = CSVGraph(root=args.root)
-    # generate_tags(word_embedding, graph)
+    graph = LocalGraph()
+    vertices = generate_tags_graph(word_embedding, graph)
+    labels = dict()
+    for key in vertices:
+        labels[vertices[key]] = key
     print(len(graph.vertices))
 
     zozo = graph.add_user("Zozo")
@@ -73,9 +71,6 @@ if __name__ == "__main__":
     juice = graph.add_tag("juice")
     graph.add_edge(zozo, juice, 3.0)
     graph.add_edge(juice, ramen, 2.0)
-    raise NotImplementedError
-    # result = get_recommendations(graph, zozo.label, 1)
-    # print(result)
 
-    visualize(graph, "visualize_scaled.html")
-    visualize(graph, "visualize_unscaled.html", scaled=False)
+    visualize(graph, labels, "visualize_scaled.html")
+    visualize(graph, labels, "visualize_unscaled.html", scaled=False)
