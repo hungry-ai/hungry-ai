@@ -12,14 +12,16 @@ def visualize(
     file_name: str = "visualize.html",
     weighted: bool = True,
     scaled: bool = True,
-    path: list[Vertex] = [],
+    path: set[Vertex] = None
 ) -> Any:
     """
     Converts graph into pyvis network object and outputs visualization as html.
     graph: Graph object
     """
-    if not file_name.endswith(".html"):
+    if not str(file_name).endswith(".html"):
         raise ValueError("file_name must end with .html")
+    if labels is None:
+        raise TypeError("Please pass a labels dict.")
 
     net = build_net(graph, labels, weighted, path)
     if scaled:
@@ -33,18 +35,17 @@ def visualize(
     else:
         nx.set_node_attributes(net, "circle", "shape")
 
-    visual_net = Network(notebook=True, cdn_resources="in_line")
+    visual_net = Network(notebook=True)#, cdn_resources="in_line")
     visual_net.from_nx(net)
     print("Graph outputted to file: " + str(file_name))
-    return visual_net.show(file_name)
-
+    return visual_net.show(str(file_name))
 
 def build_net(
-    graph: Graph, labels: dict[Vertex, str], weighted: bool, path: list[Vertex]
+    graph: Graph, labels: dict[Vertex, str], weighted: bool, path: set[Vertex]
 ) -> nx.DiGraph:
     net = nx.DiGraph()
     for vertex, label in labels.items():
-        if path and vertex in set(path):
+        if path and vertex in path:
             net.add_node(label, group=4)
         else:
             net.add_node(label, group=vertex.type.value)
@@ -62,3 +63,10 @@ def build_net(
                     labels.get(src, src.name), labels.get(dest, dest.name), arrows="to"
                 )
     return net
+
+def build_path(parent: dict[Vertex, Vertex]) -> set[Vertex]:
+    path = set()
+    for src, dest in parent.items():
+        path.add(src)
+        path.add(dest)
+    return path
