@@ -37,7 +37,7 @@ class MFRecommender(Recommender):
 
 
 def train_mf(
-    train_data: pd.train_dataFrame, K: int, alpha: float, iterations: int
+    train_data: pd.DataFrame, K: int, alpha: float, iterations: int
 ) -> MFRecommender:
     user_ids = train_data["user_id"].drop_duplicates()
     user_indices = user_ids.reset_index(drop=True).reset_index()

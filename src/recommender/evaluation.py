@@ -26,7 +26,7 @@ def reviews_dataset() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.Data
             for line_raw in f:
                 line = json.loads(line_raw)
                 images_data["image_id"].append(line.get("business_id", None))
-                images_data["tags"].append(line.get("categories", None))
+                images_data["tags"].append(line.get("categories", None) or "")
         images = pd.DataFrame(images_data)
         images.to_csv(reviews / "images.csv", index=None)
 
