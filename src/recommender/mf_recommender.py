@@ -200,7 +200,13 @@ def solve_X(
     d: int,
     alpha: float,
 ) -> np.ndarray:
+    start = time.time()
     for u in range(n):
+        if u % 10000 == 0 and u > 0:
+            print(u, "users processed")
+            end = time.time()
+            log_elapsed(start, end, u / 10000)
+
         image_ids = image_ids_by_user[u]
         ratings = ratings_by_user[u]
 
