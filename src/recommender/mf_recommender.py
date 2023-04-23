@@ -4,7 +4,7 @@ import random
 import re
 import time
 
-from numba import njit
+from numba import njit, prange
 from typing import Any
 
 from .recommender import Recommender
@@ -164,48 +164,161 @@ def get_reviews_by_user(
     )
     image_indices = sorted_data["image_index"].to_numpy()
     ratings = sorted_data["rating"].to_numpy()
-    start_index = (
+    start_indices = (
         sorted_data.reset_index().groupby("user_index")["index"].first().to_numpy()
     )
-    end_index = (
+    end_indices = (
         sorted_data.reset_index().groupby("user_index")["index"].last().to_numpy() + 1
     )
-    return image_indices, ratings, start_index, end_index
+    return image_indices, ratings, start_indices, end_indices
 
 
 @njit()
-def compute_X(
-    *,
+def get_loss(
     X: np.ndarray,
     Y: np.ndarray,
     I: np.ndarray,
     image_indices: np.ndarray,
     ratings: np.ndarray,
-    start_index: np.ndarray,
-    end_index: np.ndarray,
+    start_indices: np.ndarray,
+    end_indices: np.ndarray,
     n: int,
     k: int,
     d: int,
     alpha: float,
+    beta: float,
 ) -> None:
-    for u in range(n):
-        A = (alpha * (end_index[u] - start_index[u]) / d) * np.eye(d)
+    loss = 0.0
+    penalty_x = 0.0
+    penalty_y = 0.0
+
+    for u in prange(n):
+        for i in prange(start_indices[u], end_indices[u]):
+            loss += (ratings[i] - I[image_indices[i]] @ Y @ X[u]) ** 2
+
+        penalty_x += np.sum(X[u] ** 2)
+
+    for t in range(k):
+        penalty_y += np.sum(Y[t] ** 2)
+
+    return loss / n + alpha / (n * d) * penalty_x + beta / (k * d) * penalty_y
+
+
+@njit()
+def update_X(
+    X: np.ndarray,
+    Y: np.ndarray,
+    I: np.ndarray,
+    image_indices: np.ndarray,
+    ratings: np.ndarray,
+    start_indices: np.ndarray,
+    end_indices: np.ndarray,
+    n: int,
+    d: int,
+    alpha: float,
+) -> None:
+    for u in prange(n):
+        A = (alpha * (end_indices[u] - start_indices[u]) / d) * np.eye(d)
         b = np.zeros(d)
 
-        for i in range(start_index[u], end_index[u]):
-            image_index = image_indices[i]
-            rating = ratings[i]
+        for i in prange(start_indices[u], end_indices[u]):
+            iy = I[image_indices[i]] @ Y
 
-            v = I[image_index] @ Y
-
-            A += v.reshape(-1, 1) @ v.reshape(1, -1)
-            b += rating * v
+            A += iy.reshape(-1, 1) @ iy.reshape(1, -1)
+            b += ratings[i] * iy
 
         X[u] = np.linalg.solve(A, b)
 
 
-def compute_Y() -> None:
-    pass
+def update_gradient(
+    gradient: np.ndarray,
+    X: np.ndarray,
+    Y: np.ndarray,
+    I: np.ndarray,
+    image_indices: np.ndarray,
+    ratings: np.ndarray,
+    start_indices: np.ndarray,
+    end_indices: np.ndarray,
+    n: int,
+    k: int,
+    d: int,
+    beta: float,
+    batch_size: int,
+) -> None:
+    sample = random.sample(range(n), batch_size)
+
+    start = time.time()
+    for u_index in prange(batch_size):
+        u = sample[u_index]
+        if u_index % 10000 == 0 and u_index > 0:
+            end = time.time()
+            print(
+                f"{u_index} users processed, elapsed: {end - start:.2f}s, average: {(end-start)/u*10000:.2f}s"
+            )
+
+        a = np.zeros(k)
+
+        for i in prange(start_indices[u], end_indices[u]):
+            image_index = image_indices[i]
+            rating = ratings[i]
+
+            a += (rating - I[image_indices[i]] @ Y @ X[u]) * I[image_index]
+
+        gradient += (
+            a.reshape(-1, 1) @ X[u].reshape(1, -1) / (end_indices[u] - start_indices[u])
+        )
+
+    gradient *= -2 / batch_size
+    gradient += (2 * beta) / (k * d) * Y
+
+
+def update_Y(
+    X: np.ndarray,
+    Y: np.ndarray,
+    I: np.ndarray,
+    image_indices: np.ndarray,
+    ratings: np.ndarray,
+    start_indices: np.ndarray,
+    end_indices: np.ndarray,
+    n: int,
+    k: int,
+    d: int,
+    beta: float,
+    learning_rate: float,
+    max_epochs: int,
+    batch_size: int,
+) -> None:
+    average_update_size = 0.0
+
+    start = time.time()
+    for epoch in range(1, max_epochs + 1):
+        if epoch % 100000 == 0 and epoch > 0:
+            end = time.time()
+            average_update_size /= 100000
+            print(
+                f"{epoch=}, elapsed: {end-start:.2f}s, average: {(end-start)/epoch*100000:.2f}s, {average_update_size=:.2e}"
+            )
+            average_update_size = 0.0
+
+        gradient = np.zeros((k, d))
+        update_gradient(
+            gradient,
+            X=X,
+            Y=Y,
+            I=I,
+            image_indices=image_indices,
+            ratings=ratings,
+            start_indices=start_indices,
+            end_indices=end_indices,
+            n=n,
+            k=k,
+            d=d,
+            beta=beta,
+            batch_size=batch_size,
+        )
+
+        Y -= learning_rate * gradient
+        average_update_size += learning_rate**2 * (gradient**2).sum()
 
 
 def train_mf(
@@ -215,36 +328,77 @@ def train_mf(
     d: int,
     alpha: float,
     beta: float,
-    als_epochs: int,  # TODO: replace with convergence condition
-    sgd_learning_rate: int,
-    sgd_epochs: int,  # TODO: replace with convergence condition
+    max_als_epochs: int,  # TODO: add convergence condition
+    sgd_learning_rate: float,
+    max_sgd_epochs: int,  # TODO: add convergence condition
     sgd_batch_size: int,
 ) -> MFRecommender:
     train_data, I, tags, n, m, k = preprocess(train_data, images)
 
-    image_indices, ratings, start_index, end_index = get_reviews_by_user(train_data)
+    image_indices, ratings, start_indices, end_indices = get_reviews_by_user(train_data)
 
     X = np.random.normal(size=(n, d))
     Y = np.random.normal(size=(k, d))
 
-    for als_epoch in range(als_epochs):
+    for als_epoch in range(max_als_epochs):
+        print(f"{als_epoch=}")
+
+        print("Computing X")
         start = time.time()
-        compute_X(
+        update_X(
             X=X,
             Y=Y,
             I=I,
             image_indices=image_indices,
             ratings=ratings,
-            start_index=start_index,
-            end_index=end_index,
+            start_indices=start_indices,
+            end_indices=end_indices,
             n=n,
-            k=k,
             d=d,
             alpha=alpha,
         )
         end = time.time()
-        print(f"{end - start:.2f}")
+        print(f"{end - start:.2f}s")
 
-        compute_Y()
+        print("Computing Y")
+        start = time.time()
+        update_Y(
+            X=X,
+            Y=Y,
+            I=I,
+            image_indices=image_indices,
+            ratings=ratings,
+            start_indices=start_indices,
+            end_indices=end_indices,
+            n=n,
+            k=k,
+            d=d,
+            beta=beta,
+            learning_rate=sgd_learning_rate,
+            max_epochs=max_sgd_epochs,
+            batch_size=sgd_batch_size,
+        )
+        end = time.time()
+        print(f"{end - start:.2f}s")
+
+        print("Computing loss")
+        start = time.time()
+        loss = get_loss(
+            X=X,
+            Y=Y,
+            I=I,
+            image_indices=image_indices,
+            ratings=ratings,
+            start_indices=start_indices,
+            end_indices=end_indices,
+            n=n,
+            k=k,
+            d=d,
+            alpha=alpha,
+            beta=beta,
+        )
+        print(f"{loss=}")
+        end = time.time()
+        print(f"{end - start:.2f}s")
 
     return MFRecommender(Y, tags, alpha)
