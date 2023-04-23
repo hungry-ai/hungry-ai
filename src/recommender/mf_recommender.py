@@ -156,190 +156,62 @@ def preprocess(
     return train_data, image_tags, tags, n, m, k
 
 
-def log_elapsed(start: float, end: float, n: int = 0) -> None:
-    if n == 0:
-        print(f"Elapsed: {end - start:.2f}s")
-    else:
-        print(f"Elapsed: {end - start:.2f}s, average: {(end - start) / n:.2f}s")
-
-
 def get_reviews_by_user(
     train_data: pd.DataFrame,
-) -> tuple[np.ndarray, np.ndarray]:
-    print("Precomputing reviews_by_user")
-
-    start = time.time()
-    reviews_by_user = (
-        train_data.groupby("user_index")
-        .apply(
-            lambda group: (
-                group["image_index"].to_numpy(),
-                group["rating"].to_numpy(),
-            )
-        )
-        .to_dict()
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    sorted_data = train_data.sort_values(["user_index", "image_index"]).reset_index(
+        drop=True
     )
-    end = time.time()
-    log_elapsed(start, end)
-
-    image_ids_by_user, ratings_by_user = zip(
-        *[reviews_by_user[u] for u in range(len(reviews_by_user))]
+    image_indices = sorted_data["image_index"].to_numpy()
+    ratings = sorted_data["rating"].to_numpy()
+    start_index = (
+        sorted_data.reset_index().groupby("user_index")["index"].first().to_numpy()
     )
-    return list(image_ids_by_user), list(ratings_by_user)
+    end_index = (
+        sorted_data.reset_index().groupby("user_index")["index"].last().to_numpy() + 1
+    )
+    return image_indices, ratings, start_index, end_index
 
 
-# @njit(parallel=True)
-def solve_X(
+def compute_X(
     *,
     X: np.ndarray,
     Y: np.ndarray,
     I: np.ndarray,
-    image_ids_by_user: np.ndarray,
-    ratings_by_user: np.ndarray,
+    image_indices: np.ndarray,
+    ratings: np.ndarray,
+    start_index: np.ndarray,
+    end_index: np.ndarray,
     n: int,
+    k: int,
     d: int,
     alpha: float,
-) -> np.ndarray:
+) -> None:
     start = time.time()
     for u in range(n):
         if u % 10000 == 0 and u > 0:
-            print(u, "users processed")
             end = time.time()
-            log_elapsed(start, end, u / 10000)
+            print(
+                f"{u} users processed, {end-start:.2f}s elapsed, {(end-start)/u*10000}s average"
+            )
 
-        image_ids = image_ids_by_user[u]
-        ratings = ratings_by_user[u]
-
-        A = alpha / (n * d) * np.eye(d)
+        A = (alpha * (end_index[u] - start_index[u]) / d) * np.eye(d)
         b = np.zeros(d)
-        for i, r in zip(image_ids, ratings):
-            a = I[i] @ Y
-            b += r * a
-            a = a.reshape(1, -1)
-            A += a.T @ a
+
+        for i in range(start_index[u], end_index[u]):
+            image_index = image_indices[i]
+            rating = ratings[i]
+
+            v = I[image_index] @ Y
+
+            A += v.reshape(-1, 1) @ v.reshape(1, -1)
+            b += rating * v
 
         X[u] = np.linalg.solve(A, b)
 
 
-def get_gradient(
-    i: int,
-    *,
-    X: np.ndarray,
-    Y: np.ndarray,
-    I: np.ndarray,
-    image_ids_by_user: np.ndarray,
-    ratings_by_user: np.ndarray,
-    n: int,
-    k: int,
-    d: int,
-    beta: float,
-    sample_size: int = 0,
-) -> np.ndarray:
-    grad = 2 * beta / (k * d) * Y[i]
-
-    sample_size = sample_size or n
-    sample = range(n) if sample_size == n else random.sample(range(n), sample_size)
-    for u in sample:
-        image_ids = image_ids_by_user[u]
-        ratings = ratings_by_user[u]
-        io = I[image_ids]
-        grad += (
-            2
-            / (sample_size * len(image_ids))
-            * (io[:, i] @ (io @ (Y @ X[u]) - ratings))
-            * X[u]
-        )
-
-    return grad
-
-
-def get_loss(
-    *,
-    X: np.ndarray,
-    Y: np.ndarray,
-    I: np.ndarray,
-    image_ids_by_user: np.ndarray,
-    ratings_by_user: np.ndarray,
-    n: int,
-    k: int,
-    d: int,
-    beta: float,
-    sample_size: int = 0,
-) -> float:
-    loss = beta / (k * d) * np.linalg.norm(Y) ** 2
-
-    sample_size = sample_size or n
-    sample = range(n) if sample_size == n else random.sample(range(n), sample_size)
-    for u in sample:
-        image_ids = image_ids_by_user[u]
-        ratings = ratings_by_user[u]
-        if len(image_ids) > 0:
-            loss += (
-                1
-                / (sample_size * len(image_ids))
-                * sum((ratings - I[image_ids] @ (Y @ X[u])) ** 2)
-            )
-
-    return loss
-
-
-def solve_Y(
-    *,
-    X: np.ndarray,
-    Y: np.ndarray,
-    I: np.ndarray,
-    image_ids_by_user: np.ndarray,
-    ratings_by_user: np.ndarray,
-    n: int,
-    k: int,
-    d: int,
-    beta: float,
-    epochs: int,
-    learning_rate: int,
-    batch_size: int,
-) -> np.ndarray:
-    print("Computing Y")
-
-    start = time.time()
-    for sgd_epoch in range(epochs):
-        print(f"{sgd_epoch=}")
-
-        for i in range(k):
-            if i % 100 == 0:
-                print(i)
-
-            gradient = get_gradient(
-                i,
-                X=X,
-                Y=Y,
-                I=I,
-                image_ids_by_user=image_ids_by_user,
-                ratings_by_user=ratings_by_user,
-                n=n,
-                k=k,
-                d=d,
-                beta=beta,
-                sample_size=batch_size,
-            )
-            Y[i] -= learning_rate / (sgd_epoch + 1) * gradient
-        end = time.time()
-        log_elapsed(start, end)
-
-        loss = get_loss(
-            X=X,
-            Y=Y,
-            I=I,
-            image_ids_by_user=image_ids_by_user,
-            ratings_by_user=ratings_by_user,
-            n=n,
-            k=k,
-            d=d,
-            beta=beta,
-            sample_size=batch_size,
-        )
-        end = time.time()
-        print(f"{loss=}")
-        log_elapsed(start, end, sgd_epoch + 1)
+def compute_Y() -> None:
+    pass
 
 
 def train_mf(
@@ -349,48 +221,33 @@ def train_mf(
     d: int,
     alpha: float,
     beta: float,
-    als_epochs: int,
+    als_epochs: int,  # TODO: replace with convergence condition
     sgd_learning_rate: int,
-    sgd_epochs: int,
+    sgd_epochs: int,  # TODO: replace with convergence condition
     sgd_batch_size: int,
 ) -> MFRecommender:
     train_data, I, tags, n, m, k = preprocess(train_data, images)
 
-    image_ids_by_user, ratings_by_user = get_reviews_by_user(train_data)
+    image_indices, ratings, start_index, end_index = get_reviews_by_user(train_data)
 
     X = np.random.normal(size=(n, d))
     Y = np.random.normal(size=(k, d))
 
     for als_epoch in range(als_epochs):
-        print("Computing X")
-
-        start = time.time()
-        solve_X(
+        compute_X(
             X=X,
             Y=Y,
             I=I,
-            image_ids_by_user=image_ids_by_user,
-            ratings_by_user=ratings_by_user,
-            n=n,
-            d=d,
-            alpha=alpha,
-        )
-        end = time.time()
-        log_elapsed(start, end)
-
-        solve_Y(
-            X=X,
-            Y=Y,
-            I=I,
-            image_ids_by_user=image_ids_by_user,
-            ratings_by_user=ratings_by_user,
+            image_indices=image_indices,
+            ratings=ratings,
+            start_index=start_index,
+            end_index=end_index,
             n=n,
             k=k,
             d=d,
-            beta=beta,
-            epochs=sgd_epochs,
-            learning_rate=sgd_learning_rate,
-            batch_size=sgd_batch_size,
+            alpha=alpha,
         )
+
+        compute_Y()
 
     return MFRecommender(Y, tags, alpha)
