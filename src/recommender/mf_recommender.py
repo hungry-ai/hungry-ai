@@ -38,8 +38,8 @@ class MFRecommender(Recommender):
             return
 
         self.X[user.id] = self.x_avg
-        self.YTIuTIuY = np.zeros((self.d, self.d))
-        self.YTIuTru = np.zeros(self.d)
+        self.YTIuTIuY[user.id] = np.zeros((self.d, self.d))
+        self.YTIuTru[user.id] = np.zeros(self.d)
 
     def add_image(self, image: Image) -> None:
         tag_prs = [
@@ -182,10 +182,13 @@ def get_reviews_by_user(
     end = time.time()
     log_elapsed(start, end)
 
-    return zip(*[reviews_by_user[u] for u in range(len(reviews_by_user))])
+    image_ids_by_user, ratings_by_user = zip(
+        *[reviews_by_user[u] for u in range(len(reviews_by_user))]
+    )
+    return list(image_ids_by_user), list(ratings_by_user)
 
 
-@njit(parallel=True)
+# @njit(parallel=True)
 def solve_X(
     *,
     X: np.ndarray,
@@ -200,6 +203,7 @@ def solve_X(
     for u in range(n):
         image_ids = image_ids_by_user[u]
         ratings = ratings_by_user[u]
+
         A = alpha / (n * d) * np.eye(d)
         b = np.zeros(d)
         for i, r in zip(image_ids, ratings):
