@@ -173,6 +173,7 @@ def get_reviews_by_user(
     return image_indices, ratings, start_index, end_index
 
 
+@njit()
 def compute_X(
     *,
     X: np.ndarray,
@@ -187,14 +188,7 @@ def compute_X(
     d: int,
     alpha: float,
 ) -> None:
-    start = time.time()
     for u in range(n):
-        if u % 10000 == 0 and u > 0:
-            end = time.time()
-            print(
-                f"{u} users processed, {end-start:.2f}s elapsed, {(end-start)/u*10000}s average"
-            )
-
         A = (alpha * (end_index[u] - start_index[u]) / d) * np.eye(d)
         b = np.zeros(d)
 
@@ -234,6 +228,7 @@ def train_mf(
     Y = np.random.normal(size=(k, d))
 
     for als_epoch in range(als_epochs):
+        start = time.time()
         compute_X(
             X=X,
             Y=Y,
@@ -247,6 +242,8 @@ def train_mf(
             d=d,
             alpha=alpha,
         )
+        end = time.time()
+        print(f"{end - start:.2f}")
 
         compute_Y()
 
