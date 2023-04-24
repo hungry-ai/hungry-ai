@@ -1,10 +1,12 @@
 import heapq
 import warnings
 
+import pandas as pd  # type: ignore[import]
+
 from ..graph import Graph, Vertex, VertexType
 from ..images import Image, pr_match
 from ..reviews import Review
-from ..tags import Tag
+from ..tags import Tag, WordEmbedding
 from ..users import User
 from .recommender import Recommender
 
@@ -122,3 +124,14 @@ class KNNRecommender(Recommender):
         user_id = user.id
         closest_images, parent = self.get_closest_images(user_id)
         return closest_images[:num_recs]
+
+
+def train_knn(
+    train_data: pd.DataFrame, word_embedding: WordEmbedding
+) -> KNNRecommender:
+    graph = LocalGraph()
+    generate_tags_graph(word_embedding, graph)
+
+    recommender = KNNRecommender(graph)
+
+    return recommender
