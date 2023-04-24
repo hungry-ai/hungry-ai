@@ -8,7 +8,7 @@ from ..reviews import Review
 from ..tags import Tag, PytorchWordEmbedding, WordEmbedding, generate_tags_graph
 from ..users import User
 from .recommender import Recommender
-from .knn_recommender import KNNRecommender
+from .knn import KNNRecommender
 
 class KNNRecommenderLite(Recommender):
     def __init__(self, initial_word_embedding) -> None:
