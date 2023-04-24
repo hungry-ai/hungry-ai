@@ -15,12 +15,14 @@ class KNNRecommender(Recommender):
     def __init__(self, graph: Graph, tags: list[Tag]) -> None:
         self.graph = graph
         self.tags = tags
+        self.user_image_edges: dict[Vertex, dict[Vertex, Review]] = dict()
 
     def add_user(self, user: User) -> None:
         if Vertex(user.id, VertexType.USER) in self.graph.vertices:
             warnings.warn(f"{user.id=} already exists in the graph")
 
-        self.graph.add_user(user.id)
+        user_vtx = self.graph.add_user(user.id)
+        self.user_image_edges[user_vtx] = dict()
 
     def get_image_tag_weights(self, image: Image) -> dict[Tag, float]:
         return {tag: pr_match(image.url, tag.name) for tag in self.tags}
@@ -29,19 +31,19 @@ class KNNRecommender(Recommender):
         if p < 0.0 or p > 1.0:
             raise ValueError("invalid p")
 
-        from_vtx = Vertex(image_id, VertexType.IMAGE)
-        if from_vtx not in self.graph.vertices:
+        image_vtx = Vertex(image_id, VertexType.IMAGE)
+        if image_vtx not in self.graph.vertices:
             raise KeyError(
                 f"unknown {image_id=}, available: {[vertex.id for vertex in self.graph.images]}"
             )
 
-        to_vtx = Vertex(tag_id, VertexType.TAG)
-        if to_vtx not in self.graph.vertices:
+        tag_vtx = Vertex(tag_id, VertexType.TAG)
+        if tag_vtx not in self.graph.vertices:
             raise KeyError(
                 f"unknown {tag_id=}, available: {[vertex.id for vertex in self.graph.tags]}"
             )
 
-        self.graph.add_edge(from_vtx, to_vtx, weight=p, directed=False)
+        self.graph.add_edge(image_vtx, tag_vtx, weight=p, directed=False)
 
     def add_image(self, image: Image) -> None:
         image_id = image.id
@@ -62,22 +64,38 @@ class KNNRecommender(Recommender):
         if rating < 1.0 or rating > 5.0:
             raise ValueError("invalid rating")
 
-        from_vtx = Vertex(user_id, VertexType.USER)
-        if from_vtx not in self.graph.vertices:
+        user_vtx = Vertex(user_id, VertexType.USER)
+        if user_vtx not in self.graph.vertices:
             raise KeyError(
                 f"unknown {user_id=}, available: {[vertex.id for vertex in self.graph.users]}"
             )
 
-        to_vtx = Vertex(image_id, VertexType.IMAGE)
-        if to_vtx not in self.graph.vertices:
+        image_vtx = Vertex(image_id, VertexType.IMAGE)
+        if image_vtx not in self.graph.vertices:
             raise KeyError(
                 f"unknown {image_id=}, available: {[vertex.id for vertex in self.graph.images]}"
             )
 
-        if to_vtx in self.graph.out_neighbors(from_vtx):
-            raise NotImplementedError("TODO: support multiple user->image edges")
+        self.user_image_edges[user_vtx][image_vtx] = review
+        self.update_user_preferences(review.user)
 
-        self.graph.add_edge(from_vtx, to_vtx, weight=rating, directed=False)
+    def update_user_preferences(self, user):
+        user_vtx = Vertex(user.id, VertexType.USER)
+        total_interest = 0.0
+        interest_scores: dict[Vertex, float] = dict()
+
+        for image_vtx in self.user_image_edges[user_vtx]:
+            review = self.user_image_edges[user_vtx][image_vtx]
+            for topic_vtx in self.graph.out_neighbors(image_vtx):
+                interest = self.graph.out_neighbors(image_vtx)[topic_vtx] * review.rating
+                total_interest += interest
+                if topic_vtx not in interest_scores:
+                    interest_scores[topic_vtx] = 0.0
+                interest_scores[topic_vtx] += interest
+                
+        # Update edge weights with 1.0 - normalized interest scores.
+        for topic_vtx in self.graph.out_neighbors(image_vtx):
+            self.graph.add_edge(user_vtx, topic_vtx, 1.0 - interest_scores[topic_vtx] / total_interest)
 
     def get_closest_images(
         self, user_id: str
