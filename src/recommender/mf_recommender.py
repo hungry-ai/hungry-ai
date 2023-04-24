@@ -288,18 +288,10 @@ def update_Y(
     max_epochs: int,
     batch_size: int,
 ) -> None:
-    average_update_size = 0.0
+    delta_Y = np.zeros((k, d))
 
     start = time.time()
     for epoch in range(1, max_epochs + 1):
-        if epoch % 100000 == 0 and epoch > 0:
-            end = time.time()
-            average_update_size /= 100000
-            print(
-                f"{epoch=}, elapsed: {end-start:.2f}s, average: {(end-start)/epoch*100000:.2f}s, {average_update_size=:.2e}"
-            )
-            average_update_size = 0.0
-
         gradient = np.zeros((k, d))
         update_gradient(
             gradient,
@@ -318,7 +310,17 @@ def update_Y(
         )
 
         Y -= learning_rate * gradient
-        average_update_size += learning_rate**2 * (gradient**2).sum()
+        delta_Y += gradient
+
+        if epoch % 100000 == 0 and epoch > 0:
+            end = time.time()
+            delta_Y_size = (delta_Y**2).sum()
+            Y_size = (Y**2).sum()
+            percent_change = delta_Y_size / Y_size
+            print(
+                f"{epoch=}, elapsed: {end-start:.2f}s, average: {(end-start)/epoch*100000:.2f}s, {delta_Y_size=:.2e}, {Y_size=:.2e}, {percent_change=:.2e}"
+            )
+            delta_Y = np.zeros((k, d))
 
 
 def train_mf(
