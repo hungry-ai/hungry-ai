@@ -2,7 +2,8 @@ import heapq
 import warnings
 import datetime
 
-from ..graph import Graph, Vertex, VertexType
+from ..graph import Graph, Vertex, VertexType, LocalGraph, visualize
+
 from ..images import Image, pr_match
 from ..reviews import Review
 from ..tags import Tag, PytorchWordEmbedding, WordEmbedding, generate_tags_graph
@@ -15,7 +16,7 @@ class KNNRecommenderLite(Recommender):
         self.word_embedding = initial_word_embedding
         graph = LocalGraph()
         self.tag_vtxs = generate_tags_graph(self.word_embedding, graph)
-        tags = [Tag(id=word, name=word) for i, word in enumerate(word_embedding)]
+        tags = [Tag(id=word, name=word) for i, word in enumerate(self.word_embedding)]
         self.knn_recommender = KNNRecommender(graph, tags)
 
     def add_user(self, user: User) -> None:
@@ -30,50 +31,20 @@ class KNNRecommenderLite(Recommender):
     def get_recommendations(self, user: User, num_recs: int) -> list[str]:
         self.knn_recommender.get_recommendations(user, num_recs)
 
-if __name__ == "__main__":
-    from ..graph import LocalGraph, visualize
+def main():
+    words = []
+    # Read file contents into a string
+    with open('src/recommender/food_words.txt', 'r') as f:
+        file_contents = f.read()
 
-    words = [
-        # fmt: off
-        "Food", "Cuisine", "Taste", "Delicious", "Meal", "Recipe", "Cooking", "Beverage", "Gourmet", "Flavor",
-        "Dish", "Cuisines", "Ingredient", "Tasting", "Nourishment", "Gastronomy", "Feast", "Spice", "Savor",
-        "Culinary", "Seasoning", "Satisfaction", "Savory", "Aroma", "Feasting", "Entree", "Gourmand", "Munch",
-        "Savoriness", "Soup", "Satisfying", "Hunger", "Appetite", "Fruit", "Vegetable", "Meat", "Seafood", "Poultry",
-        "Bread", "Rice", "Noodle", "Pasta", "Cheese", "Herb", "Condiment", "Dessert", "Bake", "Roast", "Grill", "Fry",
-        "Boil", "Steam", "Sauté", "Braise", "Marinate", "Barbecue", "Baking", "Grilling", "Frying", "Boiling", "Steaming",
-        "Sauting", "Braising", "Marinade", "Barbecuing", "Oven", "Stove", "Cookware", "Cutlery", "Tableware", "Spoon", "Fork",
-        "Knife", "Chopsticks", "Mug", "Glass", "Plate", "Bowl", "Cup", "Canape", "Hors d'oeuvre", "Appetizer", "Starter",
-        "Main course", "Entrée", "Side dish", "Salad", "Soup", "Bread", "Dessert", "Cake", "Pie", "Pastry", "Ice cream", "Fruit",
-        "Candy", "Chocolate", "Beverage", "Juice", "Tea", "Coffee", "Wine", "Beer", "Liquor", "Alcohol", "Breakfast", "Lunch",
-        "Dinner", "Supper", "Snack", "Buffet", "Banquet", "Feast", "Picnic", "Potluck", "BBQ", "Cookout", "Foodie", "Gourmet",
-        "Connoisseur", "Chef", "Cook", "Baker", "Waiter", "Waitress", "Host", "Hostess", "spicy", "sweet", "sour", "bitter",
-        "savory", "garlic", "herbs", "spices", "sugar", "salt", "pepper", "vanilla", "chocolate", "cheese", "butter", "oil",
-        "vinegar", "lemon", "lime", "mayonnaise", "ketchup", "mustard", "barbecue", "pesto", "honey", "soy sauce", "hot sauce",
-        "teriyaki", "oyster sauce", "wasabi", "ginger", "coriander", "cumin", "cinnamon", "nutmeg", "cloves", "allspice",
-        "cardamom", "turmeric", "fenugreek", "curry", "paprika", "chili powder", "black pepper", "white pepper",
-        "red pepper flakes", "oregano", "basil", "rosemary", "thyme", "sage", "mint", "basmati rice", "pasta", "bread",
-        "potatoes", "carrots", "onions", "celery", "tomatoes", "bell peppers", "cucumber", "lettuce", "spinach", "kale",
-        "beets", "radishes", "mushrooms", "zucchini", "squash", "eggplant", "asparagus", "broccoli", "cauliflower",
-        "brussels sprouts", "green beans", "peas", "corn", "avocado", "mango", "banana", "apple", "orange", "grapes",
-        "strawberries", "blueberries", "raspberries", "blackberries", "cherries", "peaches", "plums", "apricots", "pomegranate",
-        "kiwi", "pineapple", "coconut", "almonds", "pecans", "walnuts", "cashews", "peanuts", "macadamia nuts", "pistachios",
-        "hazelnuts", "beef", "pork", "chicken", "turkey", "duck", "lamb", "veal", "bacon", "sausage", "ham", "salmon", "tuna",
-        "cod", "halibut", "shrimp", "crab", "lobster", "oysters", "clams", "mussels", "scallops"
-        # fmt: on
-    ]
+    # Split string by spaces and commas, and convert to list
+    words_list = file_contents.replace(',', ' ').split()
 
-    # # Read file contents into a string
-    # with open('src/recommender/food_words.txt', 'r') as f:
-    #     file_contents = f.read()
+    # Add words from words_list to existing_list
+    words.extend(words_list)
 
-    # # Split string by spaces and commas, and convert to list
-    # words_list = file_contents.replace(',', ' ').split()
-
-    # # Add words from words_list to existing_list
-    # words.extend(words_list)
-
-    # for i in range(len(words)):
-    #     words[i] = words[i].lower()
+    for i in range(len(words)):
+        words[i] = words[i].lower()
     words = list(set(words))
 
     word_embedding = PytorchWordEmbedding(words, dimension=50)
@@ -115,3 +86,7 @@ if __name__ == "__main__":
 
     visualize(graph, labels, "visualize_scaled.html")
     visualize(graph, labels, "visualize_unscaled.html", scaled=False)
+
+
+if __name__ == "__main__":
+    main()
