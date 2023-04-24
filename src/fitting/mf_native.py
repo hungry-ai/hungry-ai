@@ -1,85 +1,13 @@
-import numpy as np
-import pandas as pd  # type: ignore[import]
 import random
 import re
 import time
-
-from numba import njit, prange
 from typing import Any
 
-from .recommender import Recommender
-from ..images import Image, pr_match
-from ..reviews import Review
-from ..users import User
+import numpy as np
+import pandas as pd  # type: ignore[import]
+from numba import njit, prange  # type: ignore[import]
 
-
-class MFRecommender(Recommender):
-    def __init__(
-        self,
-        Y: np.ndarray,
-        tags: list[str],
-        alpha: float,
-    ) -> None:
-        self.Y = Y
-        self.tags = tags
-        self.alpha = alpha
-
-        self.d = Y.shape[1]
-
-        self.X = {}  # user_id -> x
-        self.x_avg = np.zeros(self.d)
-
-        self.IY = {}  # image_id -> i @ Y
-        self.YTIuTIuY = {}  # user_id -> (I_u Y).T (I_u Y) + (alpha nnz / d) I_d
-        self.YTIuTru = {}  # user_id -> (I_u Y).T r_u
-
-    def add_user(self, user: User) -> None:
-        if user.id in self.X:
-            return
-
-        self.X[user.id] = self.x_avg
-        self.YTIuTIuY[user.id] = np.zeros((self.d, self.d))
-        self.YTIuTru[user.id] = np.zeros(self.d)
-
-    def add_image(self, image: Image) -> None:
-        tag_prs = [
-            (self.Y[tag_index], pr_match(image.url, tag))
-            for tag_index, tag in enumerate(self.tags)
-        ]
-        ys, i = zip(*tag_prs)
-
-        # compute iy
-        iy = np.array(ys) @ np.array(i)
-
-        # update iy
-        self.IY[image.id] = iy
-
-    def add_review(self, review: Review) -> None:
-        user = review.user
-        image = review.image
-
-        iy = self.IY[image.id]
-
-        # compute x
-        A = self.YTIuTIuY[user.id]
-        A += iy.reshape(-1, 1) @ iy.reshape(1, -1)
-        A += self.alpha / self.d * np.eye(self.d)
-        b = self.YTiTru[user.id]
-        b += review.rating * iy
-
-        x = np.linalg.solve(A, b)
-
-        # update x
-        self.x_avg += (x - self.X[user.id]) / len(self.x_avg)
-        self.X[user.id] = x
-
-    def predict_rating(self, user_id: str, image_id: str) -> float:
-        x = self.X[user_id]
-        iy = self.IY[image_id]
-        return x @ iy
-
-    def get_recommendations(self, user: User, num_recs: int) -> list[str]:
-        raise NotImplementedError
+from ..recommender import MFRecommender
 
 
 def get_user_indices(train_data: pd.DataFrame) -> pd.DataFrame:
@@ -98,7 +26,7 @@ def get_image_indices(train_data: pd.DataFrame) -> pd.DataFrame:
 
 def get_tags_parsed(images: pd.DataFrame) -> pd.DataFrame:
     splidd_regex = re.compile(",|&|/")
-    replace_regex = re.compile(" |\(|\)|'|-")
+    replace_regex = re.compile(" |\\(|\\)|'|-")
 
     def parse_tags(tags_raw: Any) -> list[str]:
         if not isinstance(tags_raw, str):
@@ -128,7 +56,11 @@ def get_image_tags(
     def tag_vector(tags: list[str]) -> np.ndarray:
         if not tags:
             return np.zeros((1, k))
-        return (sum([np.eye(1, k, tag_indices[tag]) for tag in tags])) / len(tags)
+
+        return np.average(
+            np.array([np.eye(1, k, tag_indices[tag]).reshape(-1) for tag in tags]),
+            axis=0,
+        )
 
     image_tags_df = image_indices.merge(tags_parsed, on="image_id", how="left")
     np.testing.assert_array_equal(
@@ -187,7 +119,7 @@ def get_loss(
     d: int,
     alpha: float,
     beta: float,
-) -> None:
+) -> float:
     loss = 0.0
     penalty_x = 0.0
     penalty_y = 0.0
@@ -323,7 +255,7 @@ def update_Y(
             delta_Y = np.zeros((k, d))
 
 
-def train_mf(
+def train_mf_native(
     train_data: pd.DataFrame,
     images: pd.DataFrame,
     *,

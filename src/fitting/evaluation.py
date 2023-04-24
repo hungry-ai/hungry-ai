@@ -1,12 +1,12 @@
 import json
 import logging
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd  # type: ignore[import]
 from pathlib import Path
-from sklearn.model_selection import train_test_split
+from typing import Any
 
-from .recommender import Recommender
+import pandas as pd  # type: ignore[import]
+from sklearn.model_selection import train_test_split  # type: ignore[import]
+
+from ..recommender import Recommender
 
 
 def reviews_dataset() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -21,7 +21,7 @@ def reviews_dataset() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.Data
     if (reviews / "images.csv").exists():
         images = pd.read_csv(reviews / "images.csv")
     else:
-        images_data = {"image_id": [], "tags": []}
+        images_data: dict[str, list[Any]] = {"image_id": [], "tags": []}
         with open(yelp_dataset / "yelp_academic_dataset_business.json") as f:
             for line_raw in f:
                 line = json.loads(line_raw)
@@ -40,7 +40,11 @@ def reviews_dataset() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.Data
         reviews_validation = pd.read_csv(reviews / "reviews_validation.csv")
         reviews_test = pd.read_csv(reviews / "reviews_test.csv")
     else:
-        reviews_data = {"user_id": [], "image_id": [], "rating": []}
+        reviews_data: dict[str, list[Any]] = {
+            "user_id": [],
+            "image_id": [],
+            "rating": [],
+        }
         with open(yelp_dataset / "yelp_academic_dataset_review.json") as f:
             for line_raw in f:
                 line = json.loads(line_raw)
@@ -67,16 +71,7 @@ def evaluate_predictions(
     # test_set is a csv with columns: user_id, image_id, rating
     # all image_ids should exist in recommender.graph
 
-    rating = test_set["rating"]
-    rating_pred = test_set.apply(
-        lambda row: recommender.predict_rating(row["user_id"], row["image_id"]), axis=1
-    )
-
-    return {
-        "mse": np.mean((rating - rating_pred) ** 2),
-        "mae": np.mean(np.abs(rating - rating_pred)),
-        "rmse": np.sqrt(np.mean((rating - rating_pred) ** 2)),
-    }
+    raise NotImplementedError
 
 
 def evaluate_recommendations(
