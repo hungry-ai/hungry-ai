@@ -3,9 +3,9 @@ import re
 import time
 from typing import Any
 
+import numba as nb
 import numpy as np
 import pandas as pd  # type: ignore[import]
-from numba import njit, prange  # type: ignore[import]
 
 from ..recommender import MFRecommender
 
@@ -55,7 +55,7 @@ def get_image_tags(
 
     def tag_vector(tags: list[str]) -> np.ndarray:
         if not tags:
-            return np.zeros((1, k))
+            return np.zeros(k)
 
         return np.average(
             np.array([np.eye(1, k, tag_indices[tag]).reshape(-1) for tag in tags]),
@@ -66,7 +66,7 @@ def get_image_tags(
     np.testing.assert_array_equal(
         image_tags_df["image_index"], np.arange(len(image_indices))
     )
-    image_tags = np.concatenate(image_tags_df["tags_parsed"].apply(tag_vector))
+    image_tags = np.vstack(image_tags_df["tags_parsed"].apply(tag_vector))
 
     return image_tags, tags, k
 
@@ -78,7 +78,7 @@ def preprocess(
     n = len(user_indices)
 
     image_indices = get_image_indices(train_data)
-    m = len(user_indices)
+    m = len(image_indices)
 
     image_tags, tags, k = get_image_tags(images, image_indices)
 
@@ -105,7 +105,22 @@ def get_reviews_by_user(
     return image_indices, ratings, start_indices, end_indices
 
 
-@njit()
+@nb.njit(
+    nb.float64(
+        nb.float64[:, ::1],
+        nb.float64[:, ::1],
+        nb.float64[:, ::1],
+        nb.int64[::1],
+        nb.float64[::1],
+        nb.int64[::1],
+        nb.int64[::1],
+        nb.int64,
+        nb.int64,
+        nb.int64,
+        nb.float64,
+        nb.float64,
+    ),
+)
 def get_loss(
     X: np.ndarray,
     Y: np.ndarray,
@@ -124,8 +139,8 @@ def get_loss(
     penalty_x = 0.0
     penalty_y = 0.0
 
-    for u in prange(n):
-        for i in prange(start_indices[u], end_indices[u]):
+    for u in nb.prange(n):
+        for i in range(start_indices[u], end_indices[u]):
             loss += (ratings[i] - I[image_indices[i]] @ Y @ X[u]) ** 2
 
         penalty_x += np.sum(X[u] ** 2)
@@ -136,7 +151,20 @@ def get_loss(
     return loss / n + alpha / (n * d) * penalty_x + beta / (k * d) * penalty_y
 
 
-@njit()
+@nb.njit(
+    nb.void(
+        nb.float64[:, ::1],
+        nb.float64[:, ::1],
+        nb.float64[:, ::1],
+        nb.int64[::1],
+        nb.float64[::1],
+        nb.int64[::1],
+        nb.int64[::1],
+        nb.int64,
+        nb.int64,
+        nb.float64,
+    ),
+)
 def update_X(
     X: np.ndarray,
     Y: np.ndarray,
@@ -149,11 +177,11 @@ def update_X(
     d: int,
     alpha: float,
 ) -> None:
-    for u in prange(n):
+    for u in nb.prange(n):
         A = (alpha * (end_indices[u] - start_indices[u]) / d) * np.eye(d)
         b = np.zeros(d)
 
-        for i in prange(start_indices[u], end_indices[u]):
+        for i in range(start_indices[u], end_indices[u]):
             iy = I[image_indices[i]] @ Y
 
             A += iy.reshape(-1, 1) @ iy.reshape(1, -1)
@@ -180,7 +208,7 @@ def update_gradient(
     sample = random.sample(range(n), batch_size)
 
     start = time.time()
-    for u_index in prange(batch_size):
+    for u_index in range(batch_size):
         u = sample[u_index]
         if u_index % 10000 == 0 and u_index > 0:
             end = time.time()
@@ -190,7 +218,7 @@ def update_gradient(
 
         a = np.zeros(k)
 
-        for i in prange(start_indices[u], end_indices[u]):
+        for i in range(start_indices[u], end_indices[u]):
             image_index = image_indices[i]
             rating = ratings[i]
 
