@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from src.tags import WordEmbedding, PytorchWordEmbedding
+from src.tags import PytorchWordEmbedding, WordEmbedding
 
 
 def test_word_embedding() -> None:
@@ -26,17 +26,16 @@ def test_word_embedding() -> None:
 
 def test_pytorch_word_embedding() -> None:
     words = ["beef", "turkey", "broccoli", "salmon", "tuna", "barbecue"]
-    
-    word_embedding_1 = PytorchWordEmbedding(words, dimension = 50)
-    assert(50 == word_embedding_1.dimension)
-    
-    assert(50 == len(word_embedding_1["beef"]))
-    assert(50 == len(word_embedding_1["turkey"]))
-    assert(50 == len(word_embedding_1["broccoli"]))
-    assert(50 == len(word_embedding_1["salmon"]))
-    assert(50 == len(word_embedding_1["tuna"]))
-    assert(50 == len(word_embedding_1["barbecue"]))
-    
+
+    word_embedding_1 = PytorchWordEmbedding(words, dimension=50)
+    assert 50 == word_embedding_1.dimension
+
+    assert 50 == len(word_embedding_1["beef"])
+    assert 50 == len(word_embedding_1["turkey"])
+    assert 50 == len(word_embedding_1["broccoli"])
+    assert 50 == len(word_embedding_1["salmon"])
+    assert 50 == len(word_embedding_1["tuna"])
+    assert 50 == len(word_embedding_1["barbecue"])
+
     with pytest.raises(KeyError):
         word_embedding_1["Wassup"]
-

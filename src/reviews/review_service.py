@@ -1,22 +1,24 @@
 import datetime
+from collections import defaultdict
 from uuid import uuid4
 
-from ..db import Review, ReviewDB
-from ..graph import GraphService
+from ..images import Image
+from ..users import User
+from .reviews import Review
 
 
 class ReviewService:
-    def __init__(self, review_db: ReviewDB, graph_service: GraphService) -> None:
-        self.review_db = review_db
-        self.graph_service = graph_service
+    def __init__(self) -> None:
+        self.reviews: dict[User, list[Review]] = defaultdict(list)
 
-    def add_review(self, user_id: str, image_id: str, rating: int) -> None:
+    def add_review(self, user: User, image: Image, rating: int) -> Review:
         review_id = str(uuid4())
         timestamp = datetime.datetime.now()
-        review = Review(review_id, user_id, image_id, rating, timestamp)
-        self.review_db.insert(review)
+        review = Review(review_id, user, image, rating, timestamp)
 
-        self.graph_service.add_user_edge(user_id, image_id, rating)
+        self.reviews[user].append(review)
 
-    def get_reviews(self, user_id: str) -> list[Review]:
-        return self.review_db.select(user_id=user_id)
+        return review
+
+    def get_reviews(self, user: User) -> list[Review]:
+        return self.reviews[user]

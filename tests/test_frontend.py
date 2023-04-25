@@ -18,7 +18,13 @@ def test_search(frontend: Frontend) -> None:
     assert frontend.search("", "asdf", "") == "locations not supported yet"
     assert (
         frontend.search("", "", "cody")
-        == "\"user with instagram_username='cody' does not exist\""
+        == """\
+Recommended images:
+No recommendations available.
+My reviews:
+No reviews available.
+My stats:
+No stats available."""
     )
 
     frontend.story_mention("cody", "food.jpg", 5)
@@ -27,9 +33,9 @@ def test_search(frontend: Frontend) -> None:
         frontend.search("", "", "cody")
         == """\
 Recommended images:
-    food.jpg
+\tfood.jpg
 My reviews:
-    5 - food.jpg
+\t5 - food.jpg
 My stats:
 No stats available."""
     )
