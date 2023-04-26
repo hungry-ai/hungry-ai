@@ -105,6 +105,7 @@ def get_reviews_by_user(
     return image_indices, ratings, start_indices, end_indices
 
 
+"""
 @nb.njit(
     nb.float64(
         nb.float64[:, ::1],
@@ -121,6 +122,10 @@ def get_reviews_by_user(
         nb.float64,
     ),
 )
+"""
+
+
+@nb.njit()
 def get_loss(
     X: np.ndarray,
     Y: np.ndarray,
@@ -151,6 +156,7 @@ def get_loss(
     return loss / n + alpha / (n * d) * penalty_x + beta / (k * d) * penalty_y
 
 
+"""
 @nb.njit(
     nb.void(
         nb.float64[:, ::1],
@@ -165,6 +171,10 @@ def get_loss(
         nb.float64,
     ),
 )
+"""
+
+
+@nb.njit()
 def update_X(
     X: np.ndarray,
     Y: np.ndarray,
@@ -232,7 +242,7 @@ def update_gradient(
     gradient += (2 * beta) / (k * d) * Y
 
 
-def update_Y(
+def update_Y_sgd(
     X: np.ndarray,
     Y: np.ndarray,
     I: np.ndarray,
@@ -248,8 +258,6 @@ def update_Y(
     max_epochs: int,
     batch_size: int,
 ) -> None:
-    delta_Y = np.zeros((k, d))
-
     start = time.time()
     for epoch in range(1, max_epochs + 1):
         gradient = np.zeros((k, d))
@@ -270,17 +278,82 @@ def update_Y(
         )
 
         Y -= learning_rate * gradient
-        delta_Y += gradient
 
         if epoch % 100000 == 0 and epoch > 0:
             end = time.time()
-            delta_Y_size = (delta_Y**2).sum()
-            Y_size = (Y**2).sum()
-            percent_change = delta_Y_size / Y_size
             print(
-                f"{epoch=}, elapsed: {end-start:.2f}s, average: {(end-start)/epoch*100000:.2f}s, {delta_Y_size=:.2e}, {Y_size=:.2e}, {percent_change=:.2e}"
+                f"{epoch=}, elapsed: {end-start:.2f}s, average: {(end-start)/epoch*100000:.2f}s"
             )
-            delta_Y = np.zeros((k, d))
+
+
+def update_Y_adam(
+    X: np.ndarray,
+    Y: np.ndarray,
+    I: np.ndarray,
+    image_indices: np.ndarray,
+    ratings: np.ndarray,
+    start_indices: np.ndarray,
+    end_indices: np.ndarray,
+    n: int,
+    k: int,
+    d: int,
+    beta: float,
+    learning_rate: float,
+    max_epochs: int,
+    batch_size: int,
+    beta_1: float = 0.9,
+    beta_2: float = 0.999,
+    eps: float = 1e-8,
+) -> None:
+    beta_1_pow = 1.0
+    beta_2_pow = 1.0
+
+    m = np.zeros((k, d))
+    v = np.zeros((k, d))
+    loss = 0.0
+
+    start = time.time()
+    for epoch in range(1, max_epochs + 1):
+        gradient = np.zeros((k, d))
+        beta_1_pow *= beta_1
+        beta_2_pow *= beta_2
+
+        sample = random.sample(range(n), batch_size)
+        for u in sample:
+            start_index = start_indices[u]
+            end_index = end_indices[u]
+
+            x_u = X[u]
+            r_u = ratings[start_index:end_index]
+            I_u = I[image_indices[start_index:end_index]]
+
+            gradient -= (
+                2
+                / (end_index - start_index)
+                * ((r_u - (I_u @ Y) @ x_u) @ I_u).reshape(-1, 1)
+                @ x_u.reshape(1, -1)
+            )
+
+            loss += ((r_u - (I_u @ Y) @ x_u) ** 2).sum() / (end_index - start_index)
+
+        gradient = gradient / batch_size + 2 * beta / (k * d) * Y
+
+        m = beta_1 * m + (1 - beta_1) * gradient
+        v = beta_2 * v + (1 - beta_2) * (gradient**2)
+
+        Y -= (
+            learning_rate
+            * (m / (1.0 - beta_1_pow))
+            / (np.sqrt(v / (1.0 - beta_2_pow)) + eps)
+        )
+
+        if epoch % 100000 == 0 and epoch > 0:
+            end = time.time()
+            loss = loss / (10000 * batch_size) + beta / (k * d) * (Y**2).sum()
+            print(
+                f"{epoch=}, elapsed: {end-start:.2f}s, average: {(end-start)/epoch*100000:.2f}s, {loss=:.4e}"
+            )
+            loss = 0.0
 
 
 def train_mf_native(
@@ -324,7 +397,7 @@ def train_mf_native(
 
         print("Computing Y")
         start = time.time()
-        update_Y(
+        update_Y_adam(
             X=X,
             Y=Y,
             I=I,
