@@ -3,16 +3,20 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <Eigen/Dense>
 
 using namespace std;
 
 const int N = 5592224;
-vector<int> user_indices(N, 0);
-vector<int> image_indices(N, 0);
-vector<float> ratings(N, 5.);
+Eigen::VectorXi user_indices(N);
+Eigen::VectorXi image_indices(N);
+Eigen::VectorXf ratings(N);
 
 const int n = 1746429, m = 150341, k = 1404, d = 20;
-float I[m][k];
+Eigen::MatrixXf I(m, k);
+
+float alpha, beta, learning_rate;
+int als_max_epochs, adam_max_epochs;
 
 void read_files() {
   string line, s;
@@ -24,13 +28,13 @@ void read_files() {
     stringstream ss(line);
 
     ss >> s;
-    user_indices[i] = stoi(s);
+    user_indices(i) = stoi(s);
 
     ss >> s;
-    image_indices[i] = stoi(s);
+    image_indices(i) = stoi(s);
 
     ss >> s;
-    ratings[i] = stof(s);
+    ratings(i) = stof(s);
   }
   f1.close();
   cout << "done" << endl;
@@ -46,14 +50,30 @@ void read_files() {
 
     for (auto j = 0; j < k; ++j) {
       ss >> s;
-      I[i][j] = stof(s);
+      I(i, j) = stof(s);
     }
   }
   f2.close();
   cout << "done" << endl;
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+  if (argc <= 5) {
+    cout << "usage: mf_cpp <alpha> <beta> <learning_rate> <als_max_epochs> <adam_max_epochs>";
+    return 1;
+  }
+  alpha = stof(argv[1]);
+  beta = stof(argv[2]);
+  learning_rate = stof(argv[3]);
+  als_max_epochs = stoi(argv[4]);
+  adam_max_epochs = stoi(argv[5]);
+  cout << "using alpha=" << alpha
+       << ", beta=" << beta
+       << ", learning_rate=" << learning_rate
+       << ", als_max_epochs=" << als_max_epochs
+       << ", adam_max_epochs=" << adam_max_epochs
+       << endl;
+
   read_files();
 }
