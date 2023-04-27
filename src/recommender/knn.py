@@ -9,6 +9,7 @@ from ..reviews import Review
 from ..tags import Tag, WordEmbedding
 from ..users import User
 from .recommender import Recommender
+from typing import Optional
 
 
 class KNNRecommender(Recommender):
@@ -87,19 +88,23 @@ class KNNRecommender(Recommender):
         for image_vtx in self.user_image_edges[user_vtx]:
             review = self.user_image_edges[user_vtx][image_vtx]
             for topic_vtx in self.graph.out_neighbors(image_vtx):
-                interest = self.graph.out_neighbors(image_vtx)[topic_vtx] * review.rating
+                interest = (
+                    self.graph.out_neighbors(image_vtx)[topic_vtx] * review.rating
+                )
                 total_interest += interest
                 if topic_vtx not in interest_scores:
                     interest_scores[topic_vtx] = 0.0
                 interest_scores[topic_vtx] += interest
-                
+
         # Update edge weights with 1.0 - normalized interest scores.
         for topic_vtx in self.graph.out_neighbors(image_vtx):
-            self.graph.add_edge(user_vtx, topic_vtx, 1.0 - interest_scores[topic_vtx] / total_interest)
+            self.graph.add_edge(
+                user_vtx, topic_vtx, 1.0 - interest_scores[topic_vtx] / total_interest
+            )
 
     def get_closest_images(
         self, user_id: str
-    ) -> tuple[list[str], dict[Vertex, Vertex | None]]:
+    ) -> tuple[list[str], dict[Vertex, Optional[Vertex]]]:
         # dijkstra
         src = Vertex(user_id, VertexType.USER)
         if src not in self.graph.vertices:
@@ -109,7 +114,9 @@ class KNNRecommender(Recommender):
         distance = {src: 0.0}
         parent = dict()
 
-        priority_queue: list[tuple[float, str, VertexType, Vertex, Vertex | None]] = []
+        priority_queue: list[
+            tuple[float, str, VertexType, Vertex, Optional[Vertex]]
+        ] = []
         heapq.heappush(priority_queue, (distance[src], src.id, src.type, src, None))
 
         while len(priority_queue):
