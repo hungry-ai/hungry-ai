@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <Eigen/Dense>
+#include<ctime>
 
 using namespace std;
 using namespace Eigen;
@@ -11,36 +12,41 @@ using namespace Eigen;
 const int N = 5592224;
 //const int N = 1000;
 const int n = 1746429, m = 150341, k = 1404, d = 20;
-VectorXi user_indices(N);
-VectorXi image_indices(N);
+//const int n = 1000, m = 1000, k = 1000, d = 20;
 
-vector<int> user_indices2(N);
-vector<int> image_indices2(N);
-
-VectorXf ratings(N);
-
+vector<int> user_indices(N);
+vector<int> image_indices(N);
+vector<int> ratings(N);
 vector<int> user_start(n); 
 vector<int> user_end(n);
 
+vector<vector<float>> MM(vector<vector<float>>& A, vector<vector<float>>& B ){
+    int n = A.size();
+    int m = A[0].size();
+    int k = B[0].size();
+
+    vector<vector<float>> R(n,vector<float>(k,0));
+
+    for(int i=0;i<n;i++){
+        for(int j=0;j<k;j++){
+            for(int l=0;l<m;l++){
+                R[i][j] += A[i][l]*B[l][j];
+            }
+        }
+    }
+
+    return R;
+}
+
 void prepro(){
   for(int i=0;i<N;i++){
-    user_end[user_indices(i)] = i+1;
+    user_end[user_indices[i]] = i+1;
   }
   for(int i=N-1;i>=0;i--){
-    user_start[user_indices(i)] = i;
+    user_start[user_indices[i]] = i;
   }
 }
 
-void prepro2(){
-  for(int i=0;i<N;i++){
-    user_end[user_indices2[i]] = i+1;
-  }
-  for(int i=N-1;i>=0;i--){
-    user_start[user_indices2[i]] = i;
-  }
-}
-
-//const int n = 1000, m = 1000, k = 1404, d = 20;
 MatrixXf I(m, k);
 
 float alpha, beta, learning_rate;
@@ -49,24 +55,36 @@ int als_max_epochs, adam_max_epochs;
 MatrixXf X = MatrixXf::Random(n,d);
 MatrixXf Y = MatrixXf::Random(k,d);
 
-void update_X(){
-  for(int u=0; u<n; u++){
+float time_construct;
+float time_inverse;
 
-    if(u%10 == 0) cout << "Processed " << u << "\n";
+void update_X(){
+  for(int u=0; u<n; u++){ //n
+
+    auto time1 = time(NULL);
+
+    if(u%10000 == 0) cout << "Processed " << u << "\n";
   
     MatrixXf A = (alpha * (user_end[u] - user_start[u])/d ) * MatrixXf::Identity(d,d);
 
     VectorXf b = VectorXf::Zero(d);
 
-
     for(int i=user_start[u]; i<user_end[u]; i++){
-      MatrixXf iY = I.row(image_indices2[i]) * Y;
+      MatrixXf iY = I.row(image_indices[i]) * Y;
       A += iY.transpose() * iY;
-      b += ratings(i) * iY.transpose();
+      b += ratings[i] * iY.transpose();
     }
+
+    auto time2 = time(NULL);
 
     A.colPivHouseholderQr().solve(b);
 
+    auto time3 = time(NULL);
+
+    time_construct += time2-time1;
+    time_inverse += time3-time2;
+
+    if(u%10000 == 0 && u) cout << "Time avg " << time_construct/(u/10000) << "\n";
 
 
     //cout << "Finished " << u << "\n";
@@ -94,16 +112,14 @@ void read_files() {
     stringstream ss(line);
 
     ss >> s;
-    user_indices(i) = stoi(s);
-    user_indices2[i] = stoi(s);
+    user_indices[i] = stoi(s);
 
 
     ss >> s;
-    image_indices(i) = stoi(s);
-    image_indices2[i] = stoi(s);
+    image_indices[i] = stoi(s);
 
     ss >> s;
-    ratings(i) = stof(s);
+    ratings[i] = stof(s);
   }
   f1.close();
   cout << "done" << endl;
@@ -149,18 +165,10 @@ int main(int argc, char* argv[])
 
   read_files();
   prepro();
-
-  cout << X(0,0) << " " << Y(0,0) << "\n";
-
-  //cout << user_indices({0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20}) << "\n\n\n";
-
-  cout << "fuck u " << user_indices(N-1) << "\n";
-
-  cout << "start,end" << user_start[0] << " " << user_end[0] << "\n";
-
   update_X();
 
-  cout << "Fnshed\n";
+  cout << "Time constructing " << time_construct << "\n";
+  cout << "Time inverting " << time_inverse << "\n";
 
   return 0;
 }
