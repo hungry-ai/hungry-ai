@@ -53,61 +53,6 @@ void update_X(){
   }
 }
 
-void update_Y_adam(int adam_max_epochs, int batch_size, float beta_1 = 0.9, float beta_2 = 0.999, float eps = 1e-8){
-  float beta_1_pow = 1.0;
-  float beta_2_pow = 1.0;
-
-  MatrixXf mm = MatrixXf::Zero(k,d);
-  MatrixXf v = MatrixXf::Zero(k,d);
-
-  for(int epoch = 1; epoch <= adam_max_epochs; epoch++){
-    MatrixXf gradient = MatrixXf::Zero(k,d);
-    beta_1_pow *= beta_1;
-    beta_2_pow *= beta_2;
-
-    for(int u=0;u<batch_size;u++){
-      int start_index = user_start[u];
-      int end_index = user_end[u];
-
-      VectorXf x_u = X.row(u);
-
-      VectorXf r_u = VectorXf::Zero(end_index-start_index);
-      for(int rtg = start_index; rtg < end_index; rtg++){
-        r_u(rtg-start_index) = ratings[rtg];
-      }
-      
-      vector<int> image_indices_range;
-      for(int rtg = start_index; rtg < end_index; rtg++){
-        image_indices_range.push_back(image_indices[rtg]);
-      }
-      
-      MatrixXf I_u = I(image_indices_range,all);
-
-      MatrixXf temp = ((r_u - (I_u * Y)* x_u).transpose() * I_u).transpose() * x_u.transpose();
-      temp.array() *= 2.0/(end_index-start_index);
-      
-      gradient.array() -= temp.array();
-
-      mm = beta_1 * mm + (1-beta_1) * gradient;
-
-      MatrixXf gradient2 = gradient.array().square();
-
-      v = beta_2 * v + (1-beta_2) * gradient2;
-
-      MatrixXf v_corrected = (v / (1.0 - beta_2_pow)).cwiseSqrt();
-      v_corrected.array() += eps;
-
-      mm.array() *= learning_rate/(1-beta_1_pow);
-
-      mm.array() /= v_corrected.array();
-
-      Y.array() -= mm.array();
-
-    }
-  }
-
-}
-
 float loss(){
   
   float loss = 0;
@@ -132,6 +77,69 @@ float loss(){
   return loss / n + alpha / (n * d) * penalty_x + beta / (k * d) * penalty_y;
 }
 
+void update_Y_adam(int adam_max_epochs, int batch_size, float beta_1 = 0.9, float beta_2 = 0.999, float eps = 1e-8){
+  float beta_1_pow = 1.0;
+  float beta_2_pow = 1.0;
+
+  MatrixXf mm = MatrixXf::Zero(k,d);
+  MatrixXf v = MatrixXf::Zero(k,d);
+
+  float old_loss = 0.;
+
+  for(int epoch = 1; epoch <= adam_max_epochs; epoch++){
+    MatrixXf gradient = (2 * beta / (k * d)) * Y;
+    beta_1_pow *= beta_1;
+    beta_2_pow *= beta_2;
+    IY = I * Y;
+
+    for(int u=0;u<batch_size;u++){
+      if (u % 10000 == 0)
+        cout << u << endl;
+
+      int start_index = user_start[u];
+      int end_index = user_end[u];
+
+      VectorXf x_u = X.row(u), i_part = VectorXf::Zero(k);
+
+      for (int i = start_index; i < end_index; ++i) {
+        float coeff = ratings[i] * IY.row(image_indices[i]) * x_u;
+        i_part += coeff * I.row(image_indices[i]);
+      }
+      gradient -= 2/(batch_size * (end_index - start_index)) * i_part * x_u.transpose();
+    }
+
+    mm = beta_1 * mm + (1-beta_1) * gradient;
+
+    MatrixXf gradient2 = gradient.array().square();
+
+    v = beta_2 * v + (1-beta_2) * gradient2;
+
+    MatrixXf v_corrected = (v / (1.0 - beta_2_pow)).cwiseSqrt();
+    v_corrected.array() += eps;
+
+    mm.array() *= learning_rate/(1-beta_1_pow);
+
+    mm.array() /= v_corrected.array();
+
+    Y.array() -= mm.array();
+
+    cout << "Computing loss\n"; 
+    auto begin = std::chrono::high_resolution_clock::now();  
+    float new_loss = loss();
+    cout << "Loss: " << new_loss << "\n";
+    auto end = std::chrono::high_resolution_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
+    cout << "Loss computation took: " << elapsed.count() * 1e-9 << "\n";
+
+    if (epoch > 1 && abs(new_loss - old_loss) < .01) {
+      cout << "Converged early!\n";
+      break;
+    }
+    old_loss = new_loss;
+  }
+
+}
+
 void train_mf(int max_als_epochs, int adam_max_epochs){
   for(int als_epoch=0; als_epoch < max_als_epochs; als_epoch++){
 
@@ -144,13 +152,19 @@ void train_mf(int max_als_epochs, int adam_max_epochs){
     auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
     cout << "X computation took: " << elapsed.count() * 1e-9 << "\n";
 
+    cout << "Computing loss\n"; 
+    begin = std::chrono::high_resolution_clock::now();  
+    cout << "Loss: " << loss() << "\n";
+    end = std::chrono::high_resolution_clock::now();
+    elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
+    cout << "Loss computation took: " << elapsed.count() * 1e-9 << "\n";
+
     cout << "Computing Y\n";
     begin = std::chrono::high_resolution_clock::now();  
     update_Y_adam(adam_max_epochs,n);
     end = std::chrono::high_resolution_clock::now();
     elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
     cout << "Y computation took: " << elapsed.count() * 1e-9 << "\n";
-
 
     cout << "Computing loss\n"; 
     begin = std::chrono::high_resolution_clock::now();  
@@ -236,7 +250,7 @@ int main(int argc, char* argv[])
   read_files();
   preprocess();
 
-  train_mf(2,2);
+  train_mf(10,20);
 
 
   return 0;
