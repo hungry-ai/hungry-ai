@@ -22,6 +22,7 @@ vector<int> user_end(n);
 MatrixXf I(m, k);
 MatrixXf X = MatrixXf::Random(n,d);
 MatrixXf Y = MatrixXf::Random(k,d);
+MatrixXf IY;
 
 float alpha, beta, learning_rate;
 float time_spent;
@@ -113,12 +114,14 @@ float loss(){
   float penalty_x = 0;
   float penalty_y = 0;
 
-  for(int u=0; u<n; u++){
-    for(int i=user_start[u];i<user_end[u];i++){      
-      float sq_loss = ratings[i]-I.row(image_indices[i]).dot(Y * X.row(u).transpose());
-      loss += sq_loss * sq_loss;
-    }
+  IY = I * Y;
 
+  for (int i = 0; i < N; ++i) {
+    float sq_loss = ratings[i]-IY.row(image_indices[i]).dot(X.row(user_indices[i]));
+    loss += sq_loss * sq_loss;
+  }
+
+  for(int u=0; u<n; u++){
     penalty_x += (X.row(u)).squaredNorm();
   }
 
@@ -200,7 +203,7 @@ void read_files() {
 
 }
 
-void pre_processing(){
+void preprocess(){
   for(int i=0;i<N;i++){
     user_end[user_indices[i]] = i+1;
   }
@@ -231,7 +234,7 @@ int main(int argc, char* argv[])
 */
 
   read_files();
-  pre_processing();
+  preprocess();
 
   train_mf(2,2);
 
