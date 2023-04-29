@@ -24,7 +24,7 @@ MatrixXf X = MatrixXf::Random(n,d);
 MatrixXf Y = MatrixXf::Random(k,d);
 MatrixXf IY;
 
-float alpha, beta, learning_rate;
+float alpha = .001, beta = .001, learning_rate = 1;
 float time_spent;
 int als_max_epochs, adam_max_epochs;
 
@@ -87,7 +87,7 @@ void update_Y_adam(int adam_max_epochs, int batch_size, float beta_1 = 0.9, floa
   float old_loss = 0.;
 
   for(int epoch = 1; epoch <= adam_max_epochs; epoch++){
-    MatrixXf gradient = (2 * beta / (k * d)) * Y;
+    MatrixXf gradient = MatrixXf::Zero(k, d);
     beta_1_pow *= beta_1;
     beta_2_pow *= beta_2;
     IY = I * Y;
@@ -102,13 +102,16 @@ void update_Y_adam(int adam_max_epochs, int batch_size, float beta_1 = 0.9, floa
       VectorXf x_u = X.row(u), i_part = VectorXf::Zero(k);
 
       for (int i = start_index; i < end_index; ++i) {
-        float coeff = ratings[i] * IY.row(image_indices[i]) * x_u;
+        float coeff = ratings[i] - IY.row(image_indices[i]) * x_u;
         i_part += coeff * I.row(image_indices[i]);
       }
-      gradient -= 2/(batch_size * (end_index - start_index)) * i_part * x_u.transpose();
+      gradient -= 1./(end_index - start_index) * i_part * x_u.transpose();
     }
 
-    mm = beta_1 * mm + (1-beta_1) * gradient;
+    gradient = gradient * 2./(batch_size) + (2. * beta / (k * d)) * Y;
+    //cout << gradient << endl;
+
+    /*mm = beta_1 * mm + (1-beta_1) * gradient;
 
     MatrixXf gradient2 = gradient.array().square();
 
@@ -121,7 +124,8 @@ void update_Y_adam(int adam_max_epochs, int batch_size, float beta_1 = 0.9, floa
 
     mm.array() /= v_corrected.array();
 
-    Y.array() -= mm.array();
+    Y.array() -= mm.array();*/
+    Y -= learning_rate * gradient;
 
     cout << "Computing loss\n"; 
     auto begin = std::chrono::high_resolution_clock::now();  
