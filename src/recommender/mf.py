@@ -12,6 +12,8 @@ class MFRecommender(Recommender):
         Y: np.ndarray,
         tags: list[str],
         alpha: float,
+        x_avg: np.ndarray,
+        n_train: int,
     ) -> None:
         self.Y = Y
         self.tags = tags
@@ -20,7 +22,8 @@ class MFRecommender(Recommender):
         self.d = Y.shape[1]
 
         self.X: dict[str, np.ndarray] = {}  # user_id -> x
-        self.x_avg = np.zeros(self.d)
+        self.x_avg = x_avg
+        self.n_train = n_train
 
         self.IY: dict[str, np.ndarray] = {}  # image_id -> i @ Y
         self.YTIuTIuY: dict[
@@ -65,7 +68,7 @@ class MFRecommender(Recommender):
         x = np.linalg.solve(A, b)
 
         # update x
-        self.x_avg += (x - self.X[user.id]) / len(self.x_avg)
+        self.x_avg += (x - self.X[user.id]) / (len(self.x_avg) + self.n_train)
         self.X[user.id] = x
 
     def predict_rating(self, user_id: str, image_id: str) -> float:
