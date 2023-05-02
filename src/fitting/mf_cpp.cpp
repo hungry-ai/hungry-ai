@@ -76,7 +76,8 @@ class mf_model{
 
 
 const int N = 5592224;
-const int n = 1746429, m = 150341, k = 1404, d = 20;
+const int n = 1746429, m = 150341, k = 1404;
+int d; 
 
 vector<int> original_user_indices(N);
 vector<int> original_image_indices(N);
@@ -86,7 +87,9 @@ MatrixXf original_I(m, k);
 MatrixXf X;
 MatrixXf Y;
 MatrixXf IY;
-MatrixXf I;
+MatrixXf I; 
+
+string version;
 
 //The first three have the form (user_index, image_index, rating)
 vector<int> user_indices;  //Increasing integers from [0,users) 
@@ -100,8 +103,8 @@ vector<int> val_image_indices;
 vector<int> val_ratings;
 
 
-//float alpha, beta, learning_rate; choose for cv 
-float alpha = .001, beta = .001, learning_rate = 0.02;
+//float alpha, beta, learning_rate; 
+float alpha = .01, beta = .01, learning_rate = 0.003;
 float time_spent;
 
 void update_X(int users){
@@ -128,7 +131,7 @@ void update_X(int users){
     auto end = std::chrono::high_resolution_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
     time_spent += elapsed.count() * 1e-9;
-    if(u%100000 == 0 && u) cout << "Time avg " << time_spent/(u/10000) << "\n";
+    //if(u%10000 == 0 && u) cout << "Time avg " << time_spent/(u/10000) << "\n";
   }
 }
 
@@ -172,8 +175,8 @@ void update_Y_adam(int adam_max_epochs, int batch_size, int reviews, float beta_
     IY = I * Y;
 
     for(int u=0;u<batch_size;u++){
-      if (u % 100000 == 0)
-        cout << u << endl;
+      //if (u % 100000 == 0)
+        //cout << u << endl;
 
       int start_index = user_start[u];
       int end_index = user_end[u];
@@ -201,20 +204,20 @@ void update_Y_adam(int adam_max_epochs, int batch_size, int reviews, float beta_
 
     MatrixXf v_corrected = (v).cwiseSqrt().array()+eps;
 
-    MatrixXf final = (alpha * mm.array()) / v_corrected.array();
+    MatrixXf final = (learning_rate * mm.array()) / v_corrected.array();
 
     Y.array() -= final.array(); 
 
-    cout << "Computing loss\n"; 
+    //cout << "Computing loss\n"; 
     auto begin = std::chrono::high_resolution_clock::now();  
     float new_loss = loss(reviews, batch_size);
-    cout << "Loss: " << new_loss << "\n";
+    //cout << "Loss: " << new_loss << "\n";
     auto end = std::chrono::high_resolution_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
-    cout << "Loss computation took: " << elapsed.count() * 1e-9 << "\n";
+    //cout << "Loss computation took: " << elapsed.count() * 1e-9 << "\n";
 
     if (epoch > 1 && abs(new_loss - old_loss) < .01) {
-      cout << "Converged early!\n";
+      //cout << "Converged early!\n";
       break;
     }
     old_loss = new_loss;
@@ -225,28 +228,28 @@ void update_Y_adam(int adam_max_epochs, int batch_size, int reviews, float beta_
 void train_mf(int max_als_epochs, int adam_max_epoch, int users, int reviews){
   for(int als_epoch=0; als_epoch < max_als_epochs; als_epoch++){
 
-    cout << "Als_epoch " << als_epoch << "\n";
+    //cout << "Als_epoch " << als_epoch << "\n";
 
-    cout << "Computing X\n";
+    //cout << "Computing X\n";
     auto begin = std::chrono::high_resolution_clock::now();  
     update_X(users);
     auto end = std::chrono::high_resolution_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
-    cout << "X computation took: " << elapsed.count() * 1e-9 << "\n";
+    //cout << "X computation took: " << elapsed.count() * 1e-9 << "\n";
 
-    cout << "Computing loss\n"; 
+    //cout << "Computing loss\n"; 
     begin = std::chrono::high_resolution_clock::now();  
-    cout << "Loss: " << loss(reviews, users) << "\n";
+    //cout << "Loss: " << loss(reviews, users) << "\n";
     end = std::chrono::high_resolution_clock::now();
     elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
-    cout << "Loss computation took: " << elapsed.count() * 1e-9 << "\n";
+    //cout << "Loss computation took: " << elapsed.count() * 1e-9 << "\n";
 
-    cout << "Computing Y\n";
+    //cout << "Computing Y\n";
     begin = std::chrono::high_resolution_clock::now();  
     update_Y_adam(adam_max_epoch,users,reviews);
     end = std::chrono::high_resolution_clock::now();
     elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
-    cout << "Y computation took: " << elapsed.count() * 1e-9 << "\n";
+    //cout << "Y computation took: " << elapsed.count() * 1e-9 << "\n";
   }
 }
 
@@ -309,8 +312,8 @@ void init_XY(string version){
 void read_files() {
   string line, s;
 
-  cout << "reading reviews_train_cpp.csv" << endl;
-  ifstream f1("../../data/reviews/reviews_train_cpp.csv");
+  //cout << "reading reviews_train_cpp.csv" << endl;
+  ifstream f1("~/Documents/hungry-ai/data/reviews/reviews_train_cpp.csv");
   for (auto i = 0; i < N; ++i) {
     getline(f1, line);
     stringstream ss(line);
@@ -326,13 +329,13 @@ void read_files() {
     original_ratings[i] = stof(s);
   }
   f1.close();
-  cout << "done" << endl;
+  //cout << "done" << endl;
 
-  cout << "reading I.txt" << endl;
-  ifstream f2("../../data/reviews/I.txt");
+  //cout << "reading I.txt" << endl;
+  ifstream f2("~/Documents/hungry-ai/data/reviews/I.txt");
   for (auto i = 0; i < m; ++i) {
     if (i % 10000 == 0)
-      cout << "processing line: " << i << endl;
+      //cout << "processing line: " << i << endl;
     
     getline(f2, line);
     stringstream ss(line);
@@ -343,7 +346,7 @@ void read_files() {
     }
   }
   f2.close();
-  cout << "done" << endl;
+  //cout << "done" << endl;
 
 }
 
@@ -422,17 +425,15 @@ void random_permutation(){
   }
 }
 
-float cross_validation(int K = 5, float cv_alpha = 0.001, float cv_beta = 0.001, float cv_learning_rate = 0.01){ //Ignoring their indices, coding them [0,users) [0,images] use the has for the vectors.
+pair<float,float> cross_validation(string initial_Y_file, int K = 5, int max_als_epoch = 10, int adam_max_epoch = 10){ //Ignoring their indices, coding them [0,users) [0,images] use the has for the vectors.
   random_permutation();
-  alpha = cv_alpha;
-  beta = cv_beta;
-  learning_rate = cv_learning_rate;
 
   float result = 0;
-  cout << "Started K split for cross-validation.\n";
+  float sampleresult = 0;
+  //cout << "Started K split for cross-validation.\n";
 
   for(int l = 0; l < K; l++){
-    cout << "At slit " << l << "\n";
+    cout << "Version: " << version << " started training " << l << "\n";
 
     vector<int> train_indices;
     vector<int> val_indices;
@@ -504,7 +505,7 @@ float cross_validation(int K = 5, float cv_alpha = 0.001, float cv_beta = 0.001,
     X = MatrixXf::Random(users,d);
     Y = MatrixXf::Random(k,d);
     
-    init_Y("Y7.txt");
+    init_Y(initial_Y_file);
 
     I = original_I(unique_images,all);
     IY = I*Y;
@@ -546,67 +547,63 @@ float cross_validation(int K = 5, float cv_alpha = 0.001, float cv_beta = 0.001,
 
     return; */
 
-    train_mf(60,10,users,reviews); 
+    train_mf(max_als_epoch,adam_max_epoch,users,reviews); 
 
     mf_model model = mf_model(X,Y,I,user_indices,image_indices,users_hash,images_hash,users,images,k);
 
-
-    val_user_indices.clear();
-    val_image_indices.clear();
-    val_ratings.clear();
-    for(auto vi: val_indices){
-      val_user_indices.push_back(original_user_indices[vi]);
-      val_image_indices.push_back(original_image_indices[vi]);
-      val_ratings.push_back(original_ratings[vi]);
-    }
+    cout << "Version: " << version << " finished training " << l << "\n";
 
     float RMSE = 0;
 
-    for(int i=0;i<val_user_indices.size();i++){ //Testing with the K-1 trained model 
-      float prediction = model.predict(original_user_indices[val_user_indices[i]], original_image_indices[val_user_indices[i]]);
-      RMSE += (ratings[val_user_indices[i]] - prediction)* (ratings[val_user_indices[i]] - prediction);
+    for(auto vi: val_indices){ //Testing with the K-1 trained model 
+      float prediction = model.predict(original_user_indices[vi], original_image_indices[vi]);
+      RMSE += (original_ratings[vi] - prediction)* (original_ratings[vi] - prediction);
+
+      //if(prediction > 8 || prediction < -3) cout << "bad pred " << prediction << "\n"; 
+
     }
 
     float sampleRMSE = 0;
     for(int i=0;i<train_indices.size();i++){
       float prediction = model.predict(original_user_indices[train_indices[i]],original_image_indices[train_indices[i]]);
       sampleRMSE += (ratings[i] - prediction)*(ratings[i] - prediction);
+
+      if(i < 10){
+        cout << "Prediction " << prediction << " rating " << ratings[i] << "\n";
+      }
+
     }
 
-    RMSE = sqrt(RMSE/val_user_indices.size());
-    sampleRMSE = sqrt(sampleRMSE/user_indices.size());
+    RMSE = sqrt(RMSE/val_indices.size());
+    sampleRMSE = sqrt(sampleRMSE/train_indices.size());
 
     result += RMSE; 
-    cout << "Model " << l << " had RMSE " << RMSE << "\n";
-    cout << "In sample RMSE " << sampleRMSE << "\n";
+    sampleresult += sampleRMSE;
+    //cout << "Model " << l << " had RMSE " << RMSE << "\n";
+    //cout << "In sample RMSE " << sampleRMSE << "\n";
     //evaluate on remaining slit 
-
   }
 
-  return result/K;
+  return {result/K, sampleresult/K};
 
 }
 
 int main(int argc, char* argv[])
 {
- /*
-  if (argc <= 5) {
-    cout << "usage: mf_cpp <alpha> <beta> <learning_rate> <als_max_epochs> <adam_max_epochs>";
+  if (argc <=3) {
+    cout << "usage: mf_cpp <alpha> <beta> <d> <version>";
     return 1;
   }
+
   alpha = stof(argv[1]);
   beta = stof(argv[2]);
-  learning_rate = stof(argv[3]);
-  als_max_epochs = stoi(argv[4]);
-  adam_max_epochs = stoi(argv[5]);
+  d = stoi(argv[3]);
+  version = argv[4];
   cout << "using alpha=" << alpha
-       << ", beta=" << beta
-       << ", learning_rate=" << learning_rate
-       << ", als_max_epochs=" << als_max_epochs
-       << ", adam_max_epochs=" << adam_max_epochs
-       << endl;
-
-*/
+        << ", beta=" << beta
+        << ", d=" << d
+        << ", version=" << version
+        << endl;
 
   read_files();
   //preprocess();
@@ -656,8 +653,18 @@ int main(int argc, char* argv[])
   //cout << "CV average: " << cross_validation(5,0.001,0.001,0.05) << "\n";
 
 
-  cross_validation(1,0.001,0.001,0.002);
-  save_Y("9.txt");
+  pair<float,float> scores = cross_validation("Y17.txt", 5, 3, 10); //10,10 last two 
+
+  ofstream f;
+  f.open("CV"+version);
+  f << scores.first << "\n";
+  f << scores.second << "\n";
+  f.close();
+
+
+
+  
+  //save_Y("18.txt");
 
   //save_XY("2.txt");
 
