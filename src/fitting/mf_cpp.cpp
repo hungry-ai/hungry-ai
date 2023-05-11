@@ -11,6 +11,7 @@
 #include <random>
 #include <unordered_set>
 #include <set>
+#include <cmath> 
 
 
 using namespace std;
@@ -75,14 +76,14 @@ class mf_model{
 };
 
 
-const int N = 5592224;
-const int n = 1746429, m = 150341, k = 1404;
+const int N = 15640156;
+const int n = 324749, m = 31587, k = 2636; //receiving a k+1 
 int d; 
 
-vector<int> original_user_indices(N);
-vector<int> original_image_indices(N);
-vector<int> original_ratings(N);
-MatrixXf original_I(m, k);
+vector<int> original_user_indices;
+vector<int> original_image_indices;
+vector<int> original_ratings;
+vector<vector<float>> original_I;
 
 MatrixXf X;
 MatrixXf Y;
@@ -94,22 +95,24 @@ string version;
 //The first three have the form (user_index, image_index, rating)
 vector<int> user_indices;  //Increasing integers from [0,users) 
 vector<int> image_indices; 
-vector<int> ratings;
+vector<float> ratings;
 vector<int> user_start; //Vector of size |users| where index = user_start[i] is first index such that user_indices[index] = i 
 vector<int> user_end;
 
 vector<int> val_user_indices;
 vector<int> val_image_indices;
-vector<int> val_ratings;
+vector<float> val_ratings;
 
 
 //float alpha, beta, learning_rate; 
-float alpha = .01, beta = .01, learning_rate = 0.003;
+float alpha = .01, beta = .01, learning_rate = 0.007;
 float time_spent;
 
 void update_X(int users){
   for(int u = 0; u < users; u++){
     auto begin = std::chrono::high_resolution_clock::now();  
+
+    if(user_end[u] == user_start[u]) continue;
 
     MatrixXf A = (alpha * (user_end[u] - user_start[u])/d ) * MatrixXf::Identity(d,d);
     VectorXf b = VectorXf::Zero(d);
@@ -117,12 +120,18 @@ void update_X(int users){
 
     for(int i=user_start[u]; i<user_end[u]; i++){
       MatrixXf iY = I.row(image_indices[i]) * Y;
+
+
       A += iY.transpose() * iY;
       b += ratings[i] * iY.transpose();
     }
 
+    if(u == 2236){
+      cout << u << " " << A(0,0) << " " << (A(0,0) < -1000) << "\n";
+    }
     
     VectorXf xu = A.colPivHouseholderQr().solve(b);
+
     for(int col = 0; col < d; col++){
       X(u,col) = xu(col);
     }
@@ -131,7 +140,7 @@ void update_X(int users){
     auto end = std::chrono::high_resolution_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
     time_spent += elapsed.count() * 1e-9;
-    //if(u%10000 == 0 && u) cout << "Time avg " << time_spent/(u/10000) << "\n";
+    if(u%10000 == 0 && u) cout << "Time avg " << time_spent/(u/10000) << "\n";
   }
 }
 
@@ -145,7 +154,7 @@ float loss(int reviews, int users){
 
   for (int i = 0; i < reviews; ++i) {
     float sq_loss = ratings[i]-IY.row(image_indices[i]).dot(X.row(user_indices[i]));
-    loss += sq_loss * sq_loss;
+    loss += sq_loss * sq_loss / (user_end[user_indices[i]]-user_start[user_indices[i]]);
   }
 
   for(int u=0; u<users; u++){
@@ -156,7 +165,7 @@ float loss(int reviews, int users){
     penalty_y += (Y.row(t)).squaredNorm();
   }
 
-  return loss / users + alpha / (users * d) * penalty_x + beta / (k * d) * penalty_y;
+  return loss / users + alpha * penalty_x / (users * d)+ beta * penalty_y / (k * d);
 }
 
 void update_Y_adam(int adam_max_epochs, int batch_size, int reviews, float beta_1 = 0.9, float beta_2 = 0.999, float eps = 1e-8){
@@ -175,8 +184,8 @@ void update_Y_adam(int adam_max_epochs, int batch_size, int reviews, float beta_
     IY = I * Y;
 
     for(int u=0;u<batch_size;u++){
-      //if (u % 100000 == 0)
-        //cout << u << endl;
+      if (u % 10000 == 0)
+        cout << u << endl;
 
       int start_index = user_start[u];
       int end_index = user_end[u];
@@ -191,6 +200,14 @@ void update_Y_adam(int adam_max_epochs, int batch_size, int reviews, float beta_
     }
 
     gradient = gradient * 2./(batch_size) + (2. * beta / (k * d)) * Y;
+
+    for(int j=0;j<d;j++){
+      gradient(k-1,j) = 0;
+    }
+
+    for(int i=0;i<k;i++){
+      gradient(i,0) = 0;
+    }
 
     mm = beta_1 * mm + (1-beta_1) * gradient;
 
@@ -208,16 +225,16 @@ void update_Y_adam(int adam_max_epochs, int batch_size, int reviews, float beta_
 
     Y.array() -= final.array(); 
 
-    //cout << "Computing loss\n"; 
+    cout << "Computing loss" << endl;
     auto begin = std::chrono::high_resolution_clock::now();  
     float new_loss = loss(reviews, batch_size);
-    //cout << "Loss: " << new_loss << "\n";
+    cout << "Loss: " << new_loss << endl;
     auto end = std::chrono::high_resolution_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
-    //cout << "Loss computation took: " << elapsed.count() * 1e-9 << "\n";
+    cout << "Loss computation took: " << elapsed.count() * 1e-9 << endl;
 
     if (epoch > 1 && abs(new_loss - old_loss) < .01) {
-      //cout << "Converged early!\n";
+      cout << "Converged early!" << endl;
       break;
     }
     old_loss = new_loss;
@@ -228,28 +245,28 @@ void update_Y_adam(int adam_max_epochs, int batch_size, int reviews, float beta_
 void train_mf(int max_als_epochs, int adam_max_epoch, int users, int reviews){
   for(int als_epoch=0; als_epoch < max_als_epochs; als_epoch++){
 
-    //cout << "Als_epoch " << als_epoch << "\n";
+    cout << "Als_epoch " << als_epoch << endl;
 
-    //cout << "Computing X\n";
+    cout << "Computing X" << endl;
     auto begin = std::chrono::high_resolution_clock::now();  
     update_X(users);
     auto end = std::chrono::high_resolution_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
-    //cout << "X computation took: " << elapsed.count() * 1e-9 << "\n";
+    cout << "X computation took: " << elapsed.count() * 1e-9 << endl;
 
-    //cout << "Computing loss\n"; 
+    cout << "Computing loss" << endl;
     begin = std::chrono::high_resolution_clock::now();  
-    //cout << "Loss: " << loss(reviews, users) << "\n";
+    cout << "Loss: " << loss(reviews, users) << endl;
     end = std::chrono::high_resolution_clock::now();
     elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
-    //cout << "Loss computation took: " << elapsed.count() * 1e-9 << "\n";
+    cout << "Loss computation took: " << elapsed.count() * 1e-9 << endl;
 
-    //cout << "Computing Y\n";
+    cout << "Computing Y" << endl;
     begin = std::chrono::high_resolution_clock::now();  
     update_Y_adam(adam_max_epoch,users,reviews);
     end = std::chrono::high_resolution_clock::now();
     elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
-    //cout << "Y computation took: " << elapsed.count() * 1e-9 << "\n";
+    cout << "Y computation took: " << elapsed.count() * 1e-9 << endl;
   }
 }
 
@@ -272,145 +289,6 @@ void init_Y(string file){
   cout << "Loaded Y. Took: " << elapsed.count() * 1e-9 << "\n";
 }
 
-void init_XY(string version){
-  cout << "Loading X\n";
-  auto begin = std::chrono::high_resolution_clock::now();  
-  ifstream f;
-  f.open("X"+version);
-  for(int i=0;i<n;i++){
-    for(int j=0;j<d;j++){
-      f >> X(i,j);
-    }
-  }
-  f.close();
-
-  auto end = std::chrono::high_resolution_clock::now();
-  auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
-  cout << "Loaded X. Took: " << elapsed.count() * 1e-9 << "\n";
-
-  
-  cout << "Loading Y\n";
-  begin = std::chrono::high_resolution_clock::now();  
-  f.open("Y"+version);
-
-  for(int i=0;i<k;i++){
-    for(int j=0;j<d;j++){
-      f >> Y(i,j);
-    }
-  }
-  
-  f.close();
-
-  end = std::chrono::high_resolution_clock::now();
-  elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
-  cout << "Loaded Y. Took: " << elapsed.count() * 1e-9 << "\n";
-
-  cout << "Initialized loss is: " << loss(N,n) << "\n";
-
-}
-
-void read_files() {
-  string line, s;
-
-  //cout << "reading reviews_train_cpp.csv" << endl;
-  ifstream f1("~/Documents/hungry-ai/data/reviews/reviews_train_cpp.csv");
-  for (auto i = 0; i < N; ++i) {
-    getline(f1, line);
-    stringstream ss(line);
-
-    ss >> s;
-    original_user_indices[i] = stoi(s);
-
-
-    ss >> s;
-    original_image_indices[i] = stoi(s);
-
-    ss >> s;
-    original_ratings[i] = stof(s);
-  }
-  f1.close();
-  //cout << "done" << endl;
-
-  //cout << "reading I.txt" << endl;
-  ifstream f2("~/Documents/hungry-ai/data/reviews/I.txt");
-  for (auto i = 0; i < m; ++i) {
-    if (i % 10000 == 0)
-      //cout << "processing line: " << i << endl;
-    
-    getline(f2, line);
-    stringstream ss(line);
-
-    for (auto j = 0; j < k; ++j) {
-      ss >> s;
-      original_I(i, j) = stof(s);
-    }
-  }
-  f2.close();
-  //cout << "done" << endl;
-
-}
-
-void preprocess(int reviews, int users){ //Ranges [user_start,user_end) for each index [0,users)
-
-  user_start = vector<int>(users);
-  user_end = vector<int>(users);
-
-  for(int i=0;i<reviews;i++){ //Traverse user_indices to find last index. 
-    user_end[user_indices[i]] = i+1;
-  }
-  for(int i=reviews-1;i>=0;i--){
-    user_start[user_indices[i]] = i;
-  }
-
-}
-
-void save_XY(string version){
-  cout << "Saving X\n";
-  auto begin = std::chrono::high_resolution_clock::now();  
-  ofstream f;
-  f.open("X"+version);
-  for(int i=0;i<n;i++){
-    for(int j=0;j<d;j++){
-      f << X(i,j) << " ";
-    }
-    f << "\n";
-  }
-  f.close();
-  auto end = std::chrono::high_resolution_clock::now();
-  auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
-  cout << "Saved X. Took: " << elapsed.count() * 1e-9 << "\n";
-
-  cout << "Saving Y\n";
-  begin = std::chrono::high_resolution_clock::now();  
-  f.open("Y"+version);
-  for(int i=0;i<k;i++){
-    for(int j=0;j<d;j++){
-      f << Y(i,j) << " ";
-    }
-    f << "\n";
-  }
-  f.close();
-  end = std::chrono::high_resolution_clock::now();
-  elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
-  cout << "Saved Y. Took: " << elapsed.count() * 1e-9 << "\n";
-}
-
-void save_Y(string version){
-  cout << "Saving Y\n";
-  auto begin = std::chrono::high_resolution_clock::now();  
-  ofstream f;
-  f.open("Y"+version);
-  for(int i=0;i<k;i++){
-    for(int j=0;j<d;j++){
-      f << Y(i,j) << " ";
-    }
-    f << "\n";
-  }
-  f.close();
-  auto end = std::chrono::high_resolution_clock::now();
-  auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
-  cout << "Saved Y. Took: " << elapsed.count() * 1e-9 << "\n";
-}
 
 vector<int> permutation(N);
 
@@ -425,6 +303,30 @@ void random_permutation(){
   }
 }
 
+void preprocess(int reviews, int users){ //Ranges [user_start,user_end) for each index [0,users)
+
+  user_start = vector<int>(users,-1);
+  user_end = vector<int>(users,-1);
+
+  for(int i=0;i<reviews;i++){ //Traverse user_indices to find last index. 
+    user_end[user_indices[i]] = i+1;
+  }
+  for(int i=reviews-1;i>=0;i--){
+    user_start[user_indices[i]] = i;
+  }
+
+  bool not_missing = true;
+  for(auto u:user_start){
+    not_missing &= (u != -1);
+  }
+
+  for(auto u:user_end){
+    not_missing &= (u != -1);
+  }
+
+  assert (not_missing);
+}
+
 pair<float,float> cross_validation(string initial_Y_file, int K = 5, int max_als_epoch = 10, int adam_max_epoch = 10){ //Ignoring their indices, coding them [0,users) [0,images] use the has for the vectors.
   random_permutation();
 
@@ -433,7 +335,7 @@ pair<float,float> cross_validation(string initial_Y_file, int K = 5, int max_als
   //cout << "Started K split for cross-validation.\n";
 
   for(int l = 0; l < K; l++){
-    cout << "Version: " << version << " started training " << l << "\n";
+    cout << "Version: " << version << " started training " << l << endl;
 
     vector<int> train_indices;
     vector<int> val_indices;
@@ -504,10 +406,28 @@ pair<float,float> cross_validation(string initial_Y_file, int K = 5, int max_als
 
     X = MatrixXf::Random(users,d);
     Y = MatrixXf::Random(k,d);
-    
-    init_Y(initial_Y_file);
 
-    I = original_I(unique_images,all);
+    for(int j=0;j<d;j++){
+      Y(k-1,j) = 0;
+    }
+
+    for(int i=0;i<k;i++){
+      Y(i,0) = 0;
+    }
+
+    Y(k-1,0) = 1;
+    
+    //init_Y(initial_Y_file);
+    
+    I = MatrixXf::Zero(m,k);
+
+    for(int i=0;i<images;i++){
+      for(int j=0;j<k;j++){
+        I(i,j) = original_I[unique_images[i]][j];
+      }
+    }
+
+
     IY = I*Y;
 
     preprocess(reviews, users); //Fill user_begin, user_end vectors 
@@ -551,7 +471,7 @@ pair<float,float> cross_validation(string initial_Y_file, int K = 5, int max_als
 
     mf_model model = mf_model(X,Y,I,user_indices,image_indices,users_hash,images_hash,users,images,k);
 
-    cout << "Version: " << version << " finished training " << l << "\n";
+    cout << "Version: " << version << " finished training " << l << endl;
 
     float RMSE = 0;
 
@@ -569,7 +489,7 @@ pair<float,float> cross_validation(string initial_Y_file, int K = 5, int max_als
       sampleRMSE += (ratings[i] - prediction)*(ratings[i] - prediction);
 
       if(i < 10){
-        cout << "Prediction " << prediction << " rating " << ratings[i] << "\n";
+        //cout << "Prediction " << prediction << " rating " << ratings[i] << "\n";
       }
 
     }
@@ -579,14 +499,93 @@ pair<float,float> cross_validation(string initial_Y_file, int K = 5, int max_als
 
     result += RMSE; 
     sampleresult += sampleRMSE;
-    //cout << "Model " << l << " had RMSE " << RMSE << "\n";
-    //cout << "In sample RMSE " << sampleRMSE << "\n";
+    cout << "Model " << l << " had RMSE " << RMSE << "\n";
+    cout << "In sample RMSE " << sampleRMSE << "\n";
     //evaluate on remaining slit 
   }
 
   return {result/K, sampleresult/K};
 
 }
+
+
+void read_files() {
+  string line, s;
+
+  cout << "reading reviews_train_cpp.csv" << endl;
+  ifstream f1("/Users/alef/Documents/hungry-ai/data/real/reviews_train_cpp.csv");
+  while(getline(f1,line)){
+    stringstream ss(line);
+
+    ss >> s;
+    original_user_indices.push_back(stoi(s));
+
+    ss >> s;
+    original_image_indices.push_back(stoi(s));
+
+    ss >> s;
+    original_ratings.push_back(stof(s));
+  }
+  f1.close();
+
+  cout << "reviews " << original_user_indices.size() << "\n";
+
+
+  assert(original_user_indices.size() == original_image_indices.size());
+  assert(original_user_indices.size() == original_ratings.size());
+
+  cout << "done" << endl;
+
+  cout << "reading I.txt" << endl;
+  ifstream f2("/Users/alef/Documents/hungry-ai/data/real/I.txt");
+
+  vector<int> row_sizes;
+  while(getline(f2,line)) {    
+    stringstream ss(line);
+
+    vector<float> row;
+    while(ss >> s){
+      float temp = stof(s);
+      if(temp < -1000){
+        cout << s << "\n";
+        return;
+      }
+      row.push_back(temp);
+    }
+    original_I.push_back(row);
+    row_sizes.push_back(row.size());
+
+  }
+  f2.close();
+
+  cout << "I dimensions: " << original_I.size() << " " << original_I[0].size() << "\n";
+
+  sort(row_sizes.begin(),row_sizes.end());
+
+  assert(row_sizes[0] == row_sizes[row_sizes.size()-1]);
+
+  cout << "done" << endl;
+
+}
+
+
+void save_Y(string version, int tags, int factors){ //First line should have dimensions 
+  cout << "Saving Y\n";
+  auto begin = std::chrono::high_resolution_clock::now();  
+  ofstream f;
+  f.open("Y"+version);
+  for(int i=0;i<tags;i++){
+    for(int j=0;j<factors;j++){
+      f << Y(i,j) << " ";
+    }
+    f << "\n";
+  }
+  f.close();
+  auto end = std::chrono::high_resolution_clock::now();
+  auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
+  cout << "Saved Y. Took: " << elapsed.count() * 1e-9 << "\n";
+}
+
 
 int main(int argc, char* argv[])
 {
@@ -605,7 +604,17 @@ int main(int argc, char* argv[])
         << ", version=" << version
         << endl;
 
+  cout << "Reading files\n";
   read_files();
+
+  for(auto v:original_I){
+    for(auto u:v){
+      if(u < -1000){
+        cout << u << "\n";
+      }
+    }
+  }
+
   //preprocess();
 
   //init_XY("1.txt");
@@ -653,16 +662,17 @@ int main(int argc, char* argv[])
   //cout << "CV average: " << cross_validation(5,0.001,0.001,0.05) << "\n";
 
 
-  pair<float,float> scores = cross_validation("Y17.txt", 5, 3, 10); //10,10 last two 
+  cout << "About to start" << endl;
+  pair<float,float> scores = cross_validation("Yreal6.txt", 2,1,1); //10,10 last two 
 
   ofstream f;
   f.open("CV"+version);
-  f << scores.first << "\n";
-  f << scores.second << "\n";
+  f << scores.first << endl;
+  f << scores.second << endl;
   f.close();
 
 
-
+  save_Y("bias1.txt", k, d);
   
   //save_Y("18.txt");
 
