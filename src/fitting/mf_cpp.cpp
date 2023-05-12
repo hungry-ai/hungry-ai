@@ -17,65 +17,6 @@
 using namespace std;
 using namespace Eigen;
 
-
-class mf_model{
-  private: 
-    MatrixXf X;
-    MatrixXf Y;
-    MatrixXf I;
-    VectorXf Xavg;
-    VectorXf Iavg;
-    vector<int> user_indices;
-    vector<int> image_indices;
-    unordered_map<int,int> user_hash;
-    unordered_map<int,int> image_hash;
-    int n;
-    int m;
-    int k; 
-
-  public: 
-    mf_model(
-      MatrixXf X, 
-      MatrixXf Y,
-      MatrixXf I, 
-      vector<int> user_indices, 
-      vector<int> image_indices, 
-      unordered_map<int,int> user_hash,
-      unordered_map<int,int> image_hash,
-      int n,
-      int m,
-      int k
-    ): 
-      X(X), 
-      Y(Y),
-      I(I), 
-      user_indices(user_indices), 
-      image_indices(image_indices), 
-      user_hash(user_hash),
-      image_hash(image_hash),
-      n(n), 
-      m(m), 
-      k(k) {
-        
-        Xavg = X.colwise().mean();
-        Iavg = I.colwise().mean();
-    }
-
-    float predict(int user_id, int image_id){
-    
-    VectorXf xu = Xavg;
-    if(user_hash.count(user_id)) xu = X.row(user_hash[user_id]);
-
-    VectorXf ii =  Iavg;
-    if(image_hash.count(image_id)) ii =  I.row(image_hash[image_id]);
-
-    VectorXf xuY= Y * xu;
-    
-    return ii.dot(xuY);
-  }
-};
-
-
 const int N = 15640156;
 const int n = 324749, m = 31587, k = 2636; //receiving a k+1 
 int d; 
@@ -108,6 +49,71 @@ vector<float> val_ratings;
 float alpha = .01, beta = .01, learning_rate = 0.007;
 float time_spent;
 
+class mf_model{
+  private: 
+    MatrixXf Y;
+    MatrixXf I;
+    unordered_map<int,MatrixXf> XTX;
+    unordered_map<int,VectorXf> XTy;
+    unordered_map<int,VectorXf> user_weights;
+    unordered_map<int,VectorXf> image_weights;
+    unordered_set<int> users;
+    int m;
+    int k;
+    int d;
+
+  public: 
+    mf_model(
+      MatrixXf Y,
+      MatrixXf I,
+      int m,
+      int k,
+      int d
+    ): 
+      Y(Y),
+      I(I), 
+      m(m), 
+      k(k),
+      d(d) {
+
+        MatrixXf IY = I*Y;
+
+        for(int i=0;i<m;i++){
+          image_weights[i] = IY.row(i);
+        }
+
+    }
+
+    void add_user(int user_index){
+      if(users.count(user_index)) return;
+
+      XTX[user_index] = MatrixXf::Zero(d,d);
+      XTy[user_index] = VectorXf::Zero(d);
+      user_weights[user_index] = VectorXf::Zero(d);
+      users.insert(user_index);
+    }
+
+    void add_review(int user_index, int image_index, float rating){
+      
+      if(!users.count(user_index)){
+        add_user(user_index);
+      }
+
+      XTX[user_index] += alpha/d * MatrixXf::Identity(d,d) + image_weights[image_index] * (image_weights[image_index].transpose());
+      XTy[user_index] += rating * image_weights[image_index];
+      user_weights[user_index] = XTX[user_index].colPivHouseholderQr().solve(XTy[user_index]);
+
+    }
+
+    float predict(int user_index, int image_index){
+      if(users.count(user_index)){
+        return user_weights[user_index].dot(image_weights[image_index]);
+      }
+      return 3;
+    }
+
+};
+
 void update_X(int users){
   for(int u = 0; u < users; u++){
     auto begin = std::chrono::high_resolution_clock::now();  
@@ -124,10 +130,6 @@ void update_X(int users){
 
       A += iY.transpose() * iY;
       b += ratings[i] * iY.transpose();
-    }
-
-    if(u == 2236){
-      cout << u << " " << A(0,0) << " " << (A(0,0) < -1000) << "\n";
     }
     
     VectorXf xu = A.colPivHouseholderQr().solve(b);
@@ -270,11 +272,17 @@ void train_mf(int max_als_epochs, int adam_max_epoch, int users, int reviews){
   }
 }
 
-void init_Y(string file){
+void init_Y(string file_name){
   cout << "Loading Y\n";
   auto begin = std::chrono::high_resolution_clock::now();  
   ifstream f;  
-  f.open(file);
+  f.open(file_name);
+
+  int file_k, file_d;
+  f >> file_k >> file_d;
+
+  assert(file_k == k);
+  assert(file_d == d);
 
   for(int i=0;i<k;i++){
     for(int j=0;j<d;j++){
@@ -289,7 +297,6 @@ void init_Y(string file){
   cout << "Loaded Y. Took: " << elapsed.count() * 1e-9 << "\n";
 }
 
-
 vector<int> permutation(N);
 
 void random_permutation(){
@@ -303,12 +310,12 @@ void random_permutation(){
   }
 }
 
-void preprocess(int reviews, int users){ //Ranges [user_start,user_end) for each index [0,users)
+void preprocess(int reviews, int users){
 
   user_start = vector<int>(users,-1);
   user_end = vector<int>(users,-1);
 
-  for(int i=0;i<reviews;i++){ //Traverse user_indices to find last index. 
+  for(int i=0;i<reviews;i++){ 
     user_end[user_indices[i]] = i+1;
   }
   for(int i=reviews-1;i>=0;i--){
@@ -327,12 +334,11 @@ void preprocess(int reviews, int users){ //Ranges [user_start,user_end) for each
   assert (not_missing);
 }
 
-pair<float,float> cross_validation(string initial_Y_file, int K = 5, int max_als_epoch = 10, int adam_max_epoch = 10){ //Ignoring their indices, coding them [0,users) [0,images] use the has for the vectors.
+float cross_validation(string initial_Y_file, int K = 5, int max_als_epoch = 10, int adam_max_epoch = 10){ //Ignoring their indices, coding them [0,users)
   random_permutation();
 
   float result = 0;
   float sampleresult = 0;
-  //cout << "Started K split for cross-validation.\n";
 
   for(int l = 0; l < K; l++){
     cout << "Version: " << version << " started training " << l << endl;
@@ -342,7 +348,7 @@ pair<float,float> cross_validation(string initial_Y_file, int K = 5, int max_als
 
     if( K != 1){
       for(int i=0;i<N;i++){
-        if(permutation[i]%K != l){ //RELATE TO PERMUTATION
+        if(permutation[i]%K != l){
           train_indices.push_back(i);
         }
         else{
@@ -368,27 +374,12 @@ pair<float,float> cross_validation(string initial_Y_file, int K = 5, int max_als
     }
     int users = users_hash.size();
 
-    set<int> images_set;
-    for(auto ti: train_indices){
-      images_set.insert(original_image_indices[ti]);
-    }
-
-    unordered_map<int,int> images_hash;
-    index = 0;
-    for(auto im: images_set){
-      if(!images_hash.count(im)){
-        images_hash[im] = index;
-        index++;
-      }
-    }
-    int images = images_hash.size();
-
     user_indices.clear();
     image_indices.clear();
     ratings.clear();
     for(auto ti:train_indices){ //Initializing the information vectors with hashed user,image indices between [0,users) and [0,images)
       user_indices.push_back(users_hash[original_user_indices[ti]]);
-      image_indices.push_back(images_hash[original_image_indices[ti]]);
+      image_indices.push_back(original_image_indices[ti]);
       ratings.push_back(original_ratings[ti]);
     }
 
@@ -397,12 +388,6 @@ pair<float,float> cross_validation(string initial_Y_file, int K = 5, int max_als
       unique_users.push_back(u.first);
     }
     sort(unique_users.begin(),unique_users.end());
-
-    vector<int> unique_images;
-    for(auto u:images_hash){
-      unique_images.push_back(u.first);
-    }
-    sort(unique_images.begin(),unique_images.end());
 
     X = MatrixXf::Random(users,d);
     Y = MatrixXf::Random(k,d);
@@ -421,55 +406,19 @@ pair<float,float> cross_validation(string initial_Y_file, int K = 5, int max_als
     
     I = MatrixXf::Zero(m,k);
 
-    for(int i=0;i<images;i++){
+    for(int i=0;i<m;i++){
       for(int j=0;j<k;j++){
-        I(i,j) = original_I[unique_images[i]][j];
+        I(i,j) = original_I[i][j];
       }
     }
-
 
     IY = I*Y;
 
     preprocess(reviews, users); //Fill user_begin, user_end vectors 
 
-
-    /* Sanity checking construction 
-    int Q = 10;
-    cout << "First few train indices " ;
-    for(int i=0;i<Q;i++){
-      cout << train_indices[i] << " ";
-    }
-    cout << "\n";
-
-    cout << "Users : ";
-    for(int i=0;i<Q;i++){
-      cout << original_user_indices[i] << " ";
-    }
-    cout << "\n";
-
-    cout << "Images: ";
-    for(int i=0;i<Q;i++){
-      cout << original_image_indices[i] << " ";
-    }
-    cout << "\n";
-
-    cout << "Our users : ";
-    for(int i=0;i<Q;i++){
-      cout << user_indices[i] << " ";
-    }
-    cout << "\n";
-
-    cout << "Our images: ";
-    for(int i=0;i<Q;i++){
-      cout << image_indices[i] << " ";
-    }
-    cout << "\n";
-
-    return; */
-
     train_mf(max_als_epoch,adam_max_epoch,users,reviews); 
 
-    mf_model model = mf_model(X,Y,I,user_indices,image_indices,users_hash,images_hash,users,images,k);
+    mf_model model = mf_model(Y,I,m,k,d); //Change I to original_I ? 
 
     cout << "Version: " << version << " finished training " << l << endl;
 
@@ -478,36 +427,18 @@ pair<float,float> cross_validation(string initial_Y_file, int K = 5, int max_als
     for(auto vi: val_indices){ //Testing with the K-1 trained model 
       float prediction = model.predict(original_user_indices[vi], original_image_indices[vi]);
       RMSE += (original_ratings[vi] - prediction)* (original_ratings[vi] - prediction);
-
-      //if(prediction > 8 || prediction < -3) cout << "bad pred " << prediction << "\n"; 
-
-    }
-
-    float sampleRMSE = 0;
-    for(int i=0;i<train_indices.size();i++){
-      float prediction = model.predict(original_user_indices[train_indices[i]],original_image_indices[train_indices[i]]);
-      sampleRMSE += (ratings[i] - prediction)*(ratings[i] - prediction);
-
-      if(i < 10){
-        //cout << "Prediction " << prediction << " rating " << ratings[i] << "\n";
-      }
-
+      model.add_review(original_user_indices[vi],original_image_indices[vi],original_ratings[vi]);
     }
 
     RMSE = sqrt(RMSE/val_indices.size());
-    sampleRMSE = sqrt(sampleRMSE/train_indices.size());
 
     result += RMSE; 
-    sampleresult += sampleRMSE;
     cout << "Model " << l << " had RMSE " << RMSE << "\n";
-    cout << "In sample RMSE " << sampleRMSE << "\n";
-    //evaluate on remaining slit 
   }
 
-  return {result/K, sampleresult/K};
+  return result/K;
 
 }
-
 
 void read_files() {
   string line, s;
@@ -569,11 +500,12 @@ void read_files() {
 }
 
 
-void save_Y(string version, int tags, int factors){ //First line should have dimensions 
+void save_Y(string file_name, int tags, int factors){
   cout << "Saving Y\n";
   auto begin = std::chrono::high_resolution_clock::now();  
   ofstream f;
-  f.open("Y"+version);
+  f.open(file_name);
+  f << tags << " " << factors << "\n";
   for(int i=0;i<tags;i++){
     for(int j=0;j<factors;j++){
       f << Y(i,j) << " ";
@@ -604,79 +536,19 @@ int main(int argc, char* argv[])
         << ", version=" << version
         << endl;
 
+  
   cout << "Reading files\n";
   read_files();
 
-  for(auto v:original_I){
-    for(auto u:v){
-      if(u < -1000){
-        cout << u << "\n";
-      }
-    }
-  }
 
-  //preprocess();
-
-  //init_XY("1.txt");
-
-  //train_mf(1,1);
-
-  /* Sanity check for soft start 
-  
-  X = MatrixXf::Random(n,d);
-  Y = MatrixXf::Random(k,d);
-  init_Y("Y1.txt");
-  cout << "1\n";
-  I = original_I;
-  cout << "2\n";
-  IY = I*Y;
-  cout << "3\n";
-
-  image_indices = original_image_indices;
-  user_indices = original_user_indices;
-  ratings = original_ratings;
-
-  cout << "Soft thing loss is " << loss(N,n) << "\n";
-
-  cout << "Pre-preprocess" << "\n";
-  preprocess(N,n);
-
-  cout << "Preprocessed\n";
-  update_X(n);
-
-  cout << "Soft thing loss is " << loss(N,n) << "\n"; */
-
-  /*float a1 = cross_validation(5,0.001,0.001,0.0001);
-  float a2 = cross_validation(5,0.001,0.001,0.001);
-  float a3 = cross_validation(5,0.001,0.001,0.01);
-  float a4 = cross_validation(5,0.001,0.001,0.1);
-
-  cout << "CV average 0.0001: " << a1 << "\n";
-
-  cout << "CV average 0.001: " << a2 << "\n";
-
-  cout << "CV average 0.01: " << a3 << "\n";
-
-  cout << "CV average 0.1: " << a4 << "\n"; */
-
-  //cout << "CV average: " << cross_validation(5,0.001,0.001,0.05) << "\n";
-
-
-  cout << "About to start" << endl;
-  pair<float,float> scores = cross_validation("Yreal6.txt", 2,1,1); //10,10 last two 
+  float rmse_score = cross_validation("Ybias1.txt",5,2,2);
 
   ofstream f;
   f.open("CV"+version);
-  f << scores.first << endl;
-  f << scores.second << endl;
+  f << rmse_score << endl;
   f.close();
 
-
-  save_Y("bias1.txt", k, d);
-  
-  //save_Y("18.txt");
-
-  //save_XY("2.txt");
+  save_Y("Ybias1.txt", k, d);
 
   return 0;
 }
