@@ -114,6 +114,14 @@ class mf_model{
 
 };
 
+bool als_converged(float new_loss, float old_loss){
+  return abs(new_loss-old_loss) < 0.001;
+}
+
+bool Y_converged(float new_loss, float old_loss){
+  return abs(new_loss-old_loss) < 0.01;
+}
+
 void update_X(int users){
   for(int u = 0; u < users; u++){
     auto begin = std::chrono::high_resolution_clock::now();  
@@ -235,7 +243,7 @@ void update_Y_adam(int adam_max_epochs, int batch_size, int reviews, float beta_
     auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
     cout << "Loss computation took: " << elapsed.count() * 1e-9 << endl;
 
-    if (epoch > 1 && abs(new_loss - old_loss) < .01) {
+    if (epoch > 1 && Y_converged(new_loss,old_loss)){
       cout << "Converged early!" << endl;
       break;
     }
@@ -245,6 +253,8 @@ void update_Y_adam(int adam_max_epochs, int batch_size, int reviews, float beta_
 }
 
 void train_mf(int max_als_epochs, int adam_max_epoch, int users, int reviews){
+
+  float old_loss = 0;
   for(int als_epoch=0; als_epoch < max_als_epochs; als_epoch++){
 
     cout << "Als_epoch " << als_epoch << endl;
@@ -269,6 +279,14 @@ void train_mf(int max_als_epochs, int adam_max_epoch, int users, int reviews){
     end = std::chrono::high_resolution_clock::now();
     elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
     cout << "Y computation took: " << elapsed.count() * 1e-9 << endl;
+
+
+    float new_loss = loss(reviews,users);
+    if(als_epoch && als_converged(new_loss,old_loss)){
+      cout << "Als converged early!";
+      break;
+    }
+    old_loss = new_loss;
   }
 }
 
@@ -499,6 +517,12 @@ void read_files() {
 
 }
 
+void save_CV_results(string file_name, float score){
+  ofstream f;
+  f.open(file_name);
+  f << score << endl;
+  f.close();
+}
 
 void save_Y(string file_name, int tags, int factors){
   cout << "Saving Y\n";
@@ -540,13 +564,9 @@ int main(int argc, char* argv[])
   cout << "Reading files\n";
   read_files();
 
+  float rmse_score = cross_validation("Ybias1.txt",1,10,10);
 
-  float rmse_score = cross_validation("Ybias1.txt",5,2,2);
-
-  ofstream f;
-  f.open("CV"+version);
-  f << rmse_score << endl;
-  f.close();
+  save_CV_results("CV_results_"+version, rmse_score);
 
   save_Y("Ybias1.txt", k, d);
 
