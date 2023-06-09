@@ -1,5 +1,6 @@
 from pathlib import Path
 import json
+import numpy as np
 import pandas as pd
 import warnings
 
@@ -239,7 +240,7 @@ class YelpReviews:
         make_if_not_exists: bool = False,
     ) -> None:
         if images_path.exists():
-            self.images = pd.read_csv(images_path)
+            self.images = load_images(images_path)
         elif make_if_not_exists:
             self.images = gen_images(image_tags_path, images_path)
         else:
