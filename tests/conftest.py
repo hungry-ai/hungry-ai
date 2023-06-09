@@ -3,14 +3,12 @@ from pathlib import Path
 
 import pytest
 
-from src.backend import Backend
-from src.frontend import Frontend
 from src.graph import LocalGraph
-from src.images import Image, ImageService
-from src.recommender import KNNRecommender, RecommenderService
-from src.reviews import Review, ReviewService
+from src.images import Image
+from src.recommender import KNNRecommender
+from src.reviews import Review
 from src.tags import Tag
-from src.users import User, UserService
+from src.users import User
 
 # users
 
@@ -144,45 +142,12 @@ def knn_recommender(
     return KNNRecommender(local_graph, [japanese, soup, ramen])
 
 
-# services
-
-
-@pytest.fixture(scope="function")
-def image_service() -> ImageService:
-    return ImageService()
-
-
-@pytest.fixture(scope="function")
-def user_service() -> UserService:
-    return UserService()
-
-
-@pytest.fixture(scope="function")
-def review_service() -> ReviewService:
-    return ReviewService()
-
-
-@pytest.fixture(scope="function")
-def recommender_service(knn_recommender: KNNRecommender) -> RecommenderService:
-    return RecommenderService(knn_recommender)
-
-
 # overall
 
 
 @pytest.fixture(scope="function")
 def root(tmp_path_factory: pytest.TempPathFactory) -> Path:
     return tmp_path_factory.mktemp("data")
-
-
-@pytest.fixture(scope="function")
-def backend(root: Path) -> Backend:
-    return Backend()
-
-
-@pytest.fixture(scope="function")
-def frontend(backend: Backend) -> Frontend:
-    return Frontend(backend)
 
 
 # random
