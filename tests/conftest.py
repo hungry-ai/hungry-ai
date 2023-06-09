@@ -147,7 +147,7 @@ def knn_recommender(
 
 @pytest.fixture(scope="function")
 def root(tmp_path_factory: pytest.TempPathFactory) -> Path:
-    return tmp_path_factory.mktemp("data")
+    return tmp_path_factory.mktemp("tmp")
 
 
 # random
