@@ -1,6 +1,4 @@
 from dataclasses import dataclass
-from typing import Tuple
-
 from ..tags import Tag
 
 
@@ -12,4 +10,4 @@ class Image:
 
 @dataclass(frozen=True)
 class TaggedImage(Image):
-    tags: list[Tuple[Tag, float]]
+    tags: dict[Tag, float]
