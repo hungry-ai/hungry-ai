@@ -8,7 +8,7 @@ from src.reviews import Review
 from src.users import User
 
 
-class TestRecommender(Recommender):
+class DummyRecommender(Recommender):
     def __init__(self) -> None:
         self.user_ids: list[str] = []
         self.image_ids: list[str] = []
@@ -33,8 +33,8 @@ class TestRecommender(Recommender):
 
 
 @pytest.fixture(scope="function")
-def test_recommender() -> TestRecommender:
-    return TestRecommender()
+def test_recommender() -> DummyRecommender:
+    return DummyRecommender()
 
 
 ALL_RECOMMENDER_FIXTURES = [

@@ -1,4 +1,4 @@
-from .images import Image
+from .images import Image, TaggedImage
 from .pr_match import pr_match
 
-__all__ = ["Image", "pr_match"]
+__all__ = ["Image", "TaggedImage", "pr_match"]
