@@ -5,7 +5,7 @@ import pytest
 from src.graph import CSVGraph, Graph, LocalGraph, Vertex, VertexType
 
 
-class TestGraph(Graph):
+class DummyGraph(Graph):
     def __init__(self) -> None:
         self._vertices: set[Vertex] = set()
         self._edges: set[tuple[Vertex, Vertex, float]] = set()
@@ -28,8 +28,8 @@ class TestGraph(Graph):
 
 
 @pytest.fixture(scope="function")
-def test_graph() -> TestGraph:
-    return TestGraph()
+def test_graph() -> DummyGraph:
+    return DummyGraph()
 
 
 @pytest.fixture(scope="function")
